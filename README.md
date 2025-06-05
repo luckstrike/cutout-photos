@@ -6,6 +6,8 @@ Idea:
 - Would also be nice to choose what the main subject is (but this might be a future feature)
 
 Libraries to be Used:
+- rembg
+  - Remove the background of an image
 - opencv-python-headless
   - Image loading/saving, Gaussian blur, etc...
   - Using the headless version to avoid potential conflicts in the future
