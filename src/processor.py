@@ -85,4 +85,4 @@ class ImageProcessor:
             if self.process_image(input_path, output_path):
                 successful += 1
         
-        print(f"\nProcessed {successful}\{len(image_files)} images successfully")
+        print(f"\nProcessed {successful} / {len(image_files)} images successfully")
