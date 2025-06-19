@@ -109,23 +109,41 @@ class PaperCutoutEffect:
         
         return shadow
 
-    def _composite_image(self, image, mask, shadow):
+    def _composite_image(self, image, mask, shadow, transparent_background=True):
         """Composite image with mask and shadow"""
-        # Create white background
-        background = np.full_like(image, 255, dtype=np.uint8)
+        if transparent_background:
+            # Create RGBA image with transparent background
+            height, width = image.shape[:2]
+            result = np.zeros((height, width, 4), dtype=np.uint8)
+            
+            # Set RGB channels from original image
+            result[:, :, :3] = image
+            
+            # Set alpha channel from mask
+            result[:, :, 3] = mask
+            
+            # Apply shadow to alpha channel (darken but keep some transparency)
+            shadow_alpha = mask.astype(np.float32) / 255.0
+            shadow_effect = (shadow.astype(np.float32) / 255.0) * 0.3  # Subtle shadow on alpha
+            result[:, :, 3] = ((shadow_alpha - shadow_effect) * 255).clip(0, 255).astype(np.uint8)
+            
+        else:
+            # Original white background method
+            background = np.full_like(image, 255, dtype=np.uint8)
+            
+            # Apply shadow to background
+            shadow_3ch = cv2.cvtColor(shadow, cv2.COLOR_GRAY2BGR)
+            background = background - shadow_3ch
+            background = np.clip(background, 0, 255).astype(np.uint8)
+            
+            # Apply main mask
+            mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) / 255.0
+            
+            # Composite: background where mask is 0, image where mask is 1
+            result = background * (1 - mask_3ch) + image * mask_3ch
+            result = result.astype(np.uint8)
         
-        # Apply shadow to background
-        shadow_3ch = cv2.cvtColor(shadow, cv2.COLOR_GRAY2BGR)
-        background = background - shadow_3ch
-        background = np.clip(background, 0, 255).astype(np.uint8)
-        
-        # Apply main mask
-        mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) / 255.0
-        
-        # Composite: background where mask is 0, image where mask is 1
-        result = background * (1 - mask_3ch) + image * mask_3ch
-        
-        return result.astype(np.uint8)
+        return result
 
     def _tear_around_pixel(self, mask, x, y, size=3):
         """Create small torn area around a pixel"""
