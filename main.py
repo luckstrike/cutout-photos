@@ -52,7 +52,5 @@ def main():
         print(f"Error: Input path '{args.input}' is neither a file nor directory")
         sys.exit(1)
 
-    print(f"Processing input file: {args.input}")
-
 if __name__ == "__main__":
     main()

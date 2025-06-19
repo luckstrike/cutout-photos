@@ -23,8 +23,8 @@ class BackgroundRemover:
         output.save(self.output_path)
 
     def remove_background_to_array(self):
-        input = cv2.imread(self.input_path)
-        output = remove(input)
+        input_img = Image.open(self.input_path)
+        output = remove(input_img)
 
         # Converting the PIL Image to Numpy Arrays
         image_array = np.array(output.convert("RGB"))
