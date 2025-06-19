@@ -21,3 +21,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Folders to ignore
+output/
