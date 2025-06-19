@@ -43,7 +43,7 @@ class ImageProcessor:
             print("Saving result...")
             cv2.imwrite(output_path, result)
 
-            print(f"Completed! File written to: {input_path}")
+            print(f"Completed! File written to: {output_path}")
         except Exception as e:
             print(f"Error processing {input_path}: {e}")
     
