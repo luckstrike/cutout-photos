@@ -1,22 +1,23 @@
 """
-Paper cutout effect implementation
+Enhanced Paper cutout effect implementation with more pronounced effects
 """
 
 import cv2
 import numpy as np
 import opensimplex
 
-# Default settings
-DEFAULT_EDGE_ROUGHNESS = 0.3
-DEFAULT_SHADOW_INTENSITY = 0.5
-DEFAULT_SHADOW_OFFSET = (5, 5)
-DEFAULT_SHADOW_BLUR = 15
-NOISE_SCALE = 20.0
-EDGE_THRESHOLD = 0.3
+# Enhanced default settings for more noticeable effects
+DEFAULT_EDGE_ROUGHNESS = 0.6  # Increased from 0.3
+DEFAULT_SHADOW_INTENSITY = 0.8  # Increased from 0.5
+DEFAULT_SHADOW_OFFSET = (8, 8)  # Increased from (5, 5)
+DEFAULT_SHADOW_BLUR = 25  # Increased from 15
+NOISE_SCALE = 8.0  # Decreased from 20.0 for more detailed tears
+EDGE_THRESHOLD = 0.15  # Decreased from 0.3 for more aggressive tearing
+TEAR_RADIUS = 4  # Increased from 2 for larger torn areas
 
 
 class PaperCutoutEffect:
-    """Create realistic paper cutout effects"""
+    """Create realistic paper cutout effects with enhanced visibility"""
 
     def __init__(
         self,
@@ -45,108 +46,153 @@ class PaperCutoutEffect:
         Returns:
             np.ndarray: Image with paper cutout effect applied
         """
-        # Create rough edges
-        rough_mask = self._create_rough_edges(mask)
+        # Create rough edges with enhanced algorithm
+        rough_mask = self._create_rough_edges_enhanced(mask)
 
-        # Add shadow drop
-        shadow = self._create_drop_shadow(rough_mask)
+        # Add more pronounced shadow
+        shadow = self._create_drop_shadow_enhanced(rough_mask)
 
-        # Composite final image
-        result = self._composite_image(image, rough_mask, shadow)
+        # Composite final image with better contrast
+        result = self._composite_image_enhanced(image, rough_mask, shadow)
 
         return result
 
-    def _create_rough_edges(self, mask):
-        """Create natural torn edges using noise"""
-        # Convert mask to float for processing
+    def _create_rough_edges_enhanced(self, mask):
+        """Create more pronounced natural torn edges using noise"""
         mask_float = mask.astype(np.float32) / 255.0
-        
-        # Create noise for edge roughness
         height, width = mask.shape
         rough_mask = mask_float.copy()
         
-        # Only apply roughness if edge_roughness > 0
         if self.edge_roughness > 0:
-            # Find edges
-            edges = cv2.Canny(mask, 50, 150)
-            edge_pixels = np.where(edges > 0)
+            # Use dilated edges for wider tear effect
+            edges = cv2.Canny(mask, 30, 100)  # Lower thresholds for more edges
+            kernel = np.ones((3, 3), np.uint8)
+            edges = cv2.dilate(edges, kernel, iterations=2)  # Widen edge detection
             
-            # Add noise to edge pixels
-            for y, x in zip(edge_pixels[0], edge_pixels[1]):
-                # Generate noise value
-                noise = self.noise_generator.noise2(x / NOISE_SCALE, y / NOISE_SCALE)
-                # Scale noise by roughness parameter
-                noise_scaled = noise * self.edge_roughness
-                
-                # Apply noise to nearby pixels
-                for dy in range(-2, 3):
-                    for dx in range(-2, 3):
-                        ny, nx = y + dy, x + dx
-                        if 0 <= ny < height and 0 <= nx < width:
-                            # Reduce mask value based on noise
-                            if noise_scaled < -EDGE_THRESHOLD:
-                                rough_mask[ny, nx] *= (1.0 + noise_scaled)
-                                rough_mask[ny, nx] = max(0, rough_mask[ny, nx])
+            # Create distance transform for gradual tearing
+            distance = cv2.distanceTransform(255 - edges, cv2.DIST_L2, 5)
+            
+            # Apply noise-based tearing
+            for y in range(height):
+                for x in range(width):
+                    if distance[y, x] <= TEAR_RADIUS:  # Within tear radius of an edge
+                        # Generate multiple octaves of noise for more complex patterns
+                        noise1 = self.noise_generator.noise2(x / NOISE_SCALE, y / NOISE_SCALE)
+                        noise2 = self.noise_generator.noise2(x / (NOISE_SCALE * 0.5), y / (NOISE_SCALE * 0.5)) * 0.5
+                        combined_noise = (noise1 + noise2) * self.edge_roughness
+                        
+                        # More aggressive tearing based on distance from edge
+                        distance_factor = 1.0 - (distance[y, x] / TEAR_RADIUS)
+                        tear_intensity = combined_noise * distance_factor
+                        
+                        if tear_intensity < -EDGE_THRESHOLD:
+                            # Create more dramatic tears
+                            tear_amount = abs(tear_intensity) * 2.0
+                            rough_mask[y, x] *= max(0.0, 1.0 - tear_amount)
+                        elif tear_intensity > EDGE_THRESHOLD:
+                            # Slight expansion in some areas for natural variation
+                            rough_mask[y, x] = min(1.0, rough_mask[y, x] * (1.0 + tear_intensity * 0.3))
         
-        # Convert back to uint8
         return (rough_mask * 255).astype(np.uint8)
 
-    def _create_drop_shadow(self, mask):
-        """Create drop shadow from mask"""
-        # Create shadow by shifting and blurring the mask
+    def _create_drop_shadow_enhanced(self, mask):
+        """Create more pronounced drop shadow"""
         shadow = mask.copy()
         
-        # Shift shadow (offset)
+        # Multiple shadow layers for depth
         offset_x, offset_y = DEFAULT_SHADOW_OFFSET
+        
+        # Main shadow
         M = np.float32([[1, 0, offset_x], [0, 1, offset_y]])
         shadow = cv2.warpAffine(shadow, M, (mask.shape[1], mask.shape[0]))
         
-        # Blur shadow
+        # Secondary shadow for depth
+        M2 = np.float32([[1, 0, offset_x // 2], [0, 1, offset_y // 2]])
+        shadow2 = cv2.warpAffine(mask, M2, (mask.shape[1], mask.shape[0]))
+        
+        # Combine shadows
+        shadow = cv2.maximum(shadow, shadow2)
+        
+        # Enhanced blur
         shadow = cv2.GaussianBlur(shadow, (DEFAULT_SHADOW_BLUR, DEFAULT_SHADOW_BLUR), 0)
         
-        # Apply shadow intensity
+        # Apply stronger shadow intensity
         shadow = (shadow * self.shadow_intensity).astype(np.uint8)
         
         return shadow
 
-    def _composite_image(self, image, mask, shadow, transparent_background=True):
-        """Composite image with mask and shadow"""
+    def _composite_image_enhanced(self, image, mask, shadow, transparent_background=True):
+        """Enhanced compositing with better contrast and paper texture simulation"""
         if transparent_background:
-            # Create RGBA image with transparent background
             height, width = image.shape[:2]
             result = np.zeros((height, width, 4), dtype=np.uint8)
             
-            # Set RGB channels from original image
-            result[:, :, :3] = image
+            # Enhance image contrast slightly for paper effect
+            enhanced_image = self._enhance_for_paper_effect(image)
+            result[:, :, :3] = enhanced_image
             
-            # Set alpha channel from mask
-            result[:, :, 3] = mask
+            # Create more realistic alpha with shadow
+            mask_alpha = mask.astype(np.float32) / 255.0
+            shadow_alpha = shadow.astype(np.float32) / 255.0
             
-            # Apply shadow to alpha channel (darken but keep some transparency)
-            shadow_alpha = mask.astype(np.float32) / 255.0
-            shadow_effect = (shadow.astype(np.float32) / 255.0) * 0.3  # Subtle shadow on alpha
-            result[:, :, 3] = ((shadow_alpha - shadow_effect) * 255).clip(0, 255).astype(np.uint8)
+            # Shadow creates partial transparency behind the cutout
+            combined_alpha = mask_alpha.copy()
+            shadow_effect = shadow_alpha * 0.6  # Stronger shadow effect
+            
+            # Apply shadow where there's no main object
+            shadow_area = (mask_alpha < 0.1) & (shadow_alpha > 0.1)
+            combined_alpha[shadow_area] = shadow_effect[shadow_area]
+            
+            result[:, :, 3] = (combined_alpha * 255).astype(np.uint8)
             
         else:
-            # Original white background method
-            background = np.full_like(image, 255, dtype=np.uint8)
+            # White background with more pronounced shadow
+            background = np.full_like(image, 245, dtype=np.uint8)  # Slightly off-white
             
-            # Apply shadow to background
+            # Create shadow gradient
             shadow_3ch = cv2.cvtColor(shadow, cv2.COLOR_GRAY2BGR)
-            background = background - shadow_3ch
-            background = np.clip(background, 0, 255).astype(np.uint8)
+            shadow_strength = 1.5  # Stronger shadow
+            background = background - (shadow_3ch * shadow_strength)
+            background = np.clip(background, 180, 255).astype(np.uint8)  # Keep some lightness
             
-            # Apply main mask
+            # Enhanced image
+            enhanced_image = self._enhance_for_paper_effect(image)
+            
+            # Smooth mask blending
             mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) / 255.0
+            mask_smooth = cv2.GaussianBlur(mask_3ch, (3, 3), 0)  # Slight blur for natural blending
             
-            # Composite: background where mask is 0, image where mask is 1
-            result = background * (1 - mask_3ch) + image * mask_3ch
+            result = background * (1 - mask_smooth) + enhanced_image * mask_smooth
             result = result.astype(np.uint8)
         
         return result
 
-    def _tear_around_pixel(self, mask, x, y, size=3):
-        """Create small torn area around a pixel"""
-        # This method can be used for more detailed tearing effects
-        # For now, it's not used in the main pipeline
-        pass
+    def _enhance_for_paper_effect(self, image):
+        """Enhance image to look more like it was printed on paper"""
+        # Slightly increase contrast and saturation
+        enhanced = image.astype(np.float32)
+        
+        # Increase contrast slightly
+        enhanced = enhanced * 1.1 - 12
+        enhanced = np.clip(enhanced, 0, 255)
+        
+        # Convert to HSV for saturation adjustment
+        hsv = cv2.cvtColor(enhanced.astype(np.uint8), cv2.COLOR_BGR2HSV)
+        hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], 1.15)  # Increase saturation
+        
+        # Convert back to BGR
+        enhanced = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        
+        return enhanced
+
+    def _create_rough_edges(self, mask):
+        """Original method - kept for compatibility"""
+        return self._create_rough_edges_enhanced(mask)
+
+    def _create_drop_shadow(self, mask):
+        """Original method - kept for compatibility"""
+        return self._create_drop_shadow_enhanced(mask)
+
+    def _composite_image(self, image, mask, shadow, transparent_background=True):
+        """Original method - kept for compatibility"""
+        return self._composite_image_enhanced(image, mask, shadow, transparent_background)
