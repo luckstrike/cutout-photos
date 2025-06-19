@@ -8,6 +8,8 @@ from PIL import Image
 from rembg import remove
 
 
+# TODO: Add in smart format detection
+#       to detect how a file should be saved (.png/.jpg/etc...)
 class BackgroundRemover:
     """Handle background removal from images"""
 
