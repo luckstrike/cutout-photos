@@ -1,198 +1,360 @@
 """
-Enhanced Paper cutout effect implementation with more pronounced effects
+Scissor-cut paper cutout effect - simulates cutting with straight scissors
 """
 
 import cv2
 import numpy as np
-import opensimplex
+import random
+import math
 
-# Enhanced default settings for more noticeable effects
-DEFAULT_EDGE_ROUGHNESS = 0.6  # Increased from 0.3
-DEFAULT_SHADOW_INTENSITY = 0.8  # Increased from 0.5
-DEFAULT_SHADOW_OFFSET = (8, 8)  # Increased from (5, 5)
-DEFAULT_SHADOW_BLUR = 25  # Increased from 15
-NOISE_SCALE = 8.0  # Decreased from 20.0 for more detailed tears
-EDGE_THRESHOLD = 0.15  # Decreased from 0.3 for more aggressive tearing
-TEAR_RADIUS = 4  # Increased from 2 for larger torn areas
+# Scissor-cut specific settings
+DEFAULT_EDGE_ROUGHNESS = 0.7
+DEFAULT_SHADOW_INTENSITY = 0.8
+DEFAULT_SHADOW_OFFSET = (10, 10)
+DEFAULT_SHADOW_BLUR = 31     # Changed from 30 to 31 (must be odd)
+DEFAULT_CUT_LENGTH_MIN = 8      # Minimum scissor cut length
+DEFAULT_CUT_LENGTH_MAX = 25     # Maximum scissor cut length
+DEFAULT_CUT_FREQUENCY = 0.3     # How often to make cuts (0.0-1.0)
+DEFAULT_CUT_DEPTH = 8           # How deep cuts go into the object
 
 
-class PaperCutoutEffect:
-    """Create realistic paper cutout effects with enhanced visibility"""
+class ScissorCutoutEffect:
+    """Create realistic scissor-cut paper cutout effects"""
 
     def __init__(
         self,
         edge_roughness=DEFAULT_EDGE_ROUGHNESS,
         shadow_intensity=DEFAULT_SHADOW_INTENSITY,
+        cut_length_min=DEFAULT_CUT_LENGTH_MIN,
+        cut_length_max=DEFAULT_CUT_LENGTH_MAX,
+        cut_frequency=DEFAULT_CUT_FREQUENCY,
+        cut_depth=DEFAULT_CUT_DEPTH
     ):
         """
-        Initialize paper cutout effect
+        Initialize scissor cutout effect
 
         Args:
-            edge_roughness: How rough the edges should be (0.0 - 1.0)
+            edge_roughness: Overall roughness multiplier (0.0 - 1.0)
             shadow_intensity: Intensity of shadow drop (0.0 - 1.0)
+            cut_length_min: Minimum length of scissor cuts in pixels
+            cut_length_max: Maximum length of scissor cuts in pixels
+            cut_frequency: How often to make cuts (0.0 - 1.0)
+            cut_depth: How deep cuts penetrate into the object
         """
         self.edge_roughness = edge_roughness
         self.shadow_intensity = shadow_intensity
-        self.noise_generator = opensimplex.OpenSimplex(seed=42)
+        self.cut_length_min = cut_length_min
+        self.cut_length_max = cut_length_max
+        self.cut_frequency = cut_frequency
+        self.cut_depth = cut_depth
+        
+        # Set random seed for reproducible results
+        random.seed(42)
 
     def apply(self, image, mask):
         """
-        Apply paper cutout effect to image
+        Apply scissor-cut paper cutout effect to image
 
         Args:
             image (np.ndarray): Input image (BGR format)
             mask (np.ndarray): Binary mask for foreground
 
         Returns:
-            np.ndarray: Image with paper cutout effect applied
+            np.ndarray: Image with scissor-cut effect applied
         """
-        # Create rough edges with enhanced algorithm
-        rough_mask = self._create_rough_edges_enhanced(mask)
+        # Create scissor-cut edges
+        cut_mask = self._create_scissor_cuts(mask)
 
-        # Add more pronounced shadow
-        shadow = self._create_drop_shadow_enhanced(rough_mask)
+        # Add pronounced shadow
+        shadow = self._create_drop_shadow(cut_mask)
 
-        # Composite final image with better contrast
-        result = self._composite_image_enhanced(image, rough_mask, shadow)
+        # Composite final image
+        result = self._composite_image(image, cut_mask, shadow)
 
         return result
 
-    def _create_rough_edges_enhanced(self, mask):
-        """Create more pronounced natural torn edges using noise"""
-        mask_float = mask.astype(np.float32) / 255.0
-        height, width = mask.shape
-        rough_mask = mask_float.copy()
+    def _create_scissor_cuts(self, mask):
+        """Create jagged edges by simulating scissor cuts"""
+        # Start with original mask
+        cut_mask = mask.copy()
         
-        if self.edge_roughness > 0:
-            # Use dilated edges for wider tear effect
-            edges = cv2.Canny(mask, 30, 100)  # Lower thresholds for more edges
-            kernel = np.ones((3, 3), np.uint8)
-            edges = cv2.dilate(edges, kernel, iterations=2)  # Widen edge detection
-            
-            # Create distance transform for gradual tearing
-            distance = cv2.distanceTransform(255 - edges, cv2.DIST_L2, 5)
-            
-            # Apply noise-based tearing
-            for y in range(height):
-                for x in range(width):
-                    if distance[y, x] <= TEAR_RADIUS:  # Within tear radius of an edge
-                        # Generate multiple octaves of noise for more complex patterns
-                        noise1 = self.noise_generator.noise2(x / NOISE_SCALE, y / NOISE_SCALE)
-                        noise2 = self.noise_generator.noise2(x / (NOISE_SCALE * 0.5), y / (NOISE_SCALE * 0.5)) * 0.5
-                        combined_noise = (noise1 + noise2) * self.edge_roughness
-                        
-                        # More aggressive tearing based on distance from edge
-                        distance_factor = 1.0 - (distance[y, x] / TEAR_RADIUS)
-                        tear_intensity = combined_noise * distance_factor
-                        
-                        if tear_intensity < -EDGE_THRESHOLD:
-                            # Create more dramatic tears
-                            tear_amount = abs(tear_intensity) * 2.0
-                            rough_mask[y, x] *= max(0.0, 1.0 - tear_amount)
-                        elif tear_intensity > EDGE_THRESHOLD:
-                            # Slight expansion in some areas for natural variation
-                            rough_mask[y, x] = min(1.0, rough_mask[y, x] * (1.0 + tear_intensity * 0.3))
+        if self.edge_roughness <= 0:
+            return cut_mask
         
-        return (rough_mask * 255).astype(np.uint8)
+        # Find contours of the object
+        try:
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        except Exception as e:
+            print(f"Error finding contours: {e}")
+            return cut_mask
+        
+        if not contours:
+            print("Warning: No contours found in mask")
+            return cut_mask
+        
+        # Work with the largest contour (main object)
+        main_contour = max(contours, key=cv2.contourArea)
+        contour_area = cv2.contourArea(main_contour)
+        
+        # Skip very small contours
+        if contour_area < 100:  # Minimum 100 pixels
+            print(f"Warning: Contour too small (area: {contour_area}), skipping cuts")
+            return cut_mask
+        
+        print(f"Processing contour with area: {contour_area:.0f} pixels")
+        
+        # Create cuts along the contour
+        try:
+            cut_mask = self._cut_along_contour(cut_mask, main_contour)
+        except Exception as e:
+            print(f"Error creating cuts: {e}")
+            return mask  # Return original mask if cutting fails
+        
+        return cut_mask
 
-    def _create_drop_shadow_enhanced(self, mask):
-        """Create more pronounced drop shadow"""
+    def _cut_along_contour(self, mask, contour):
+        """Make scissor cuts along the contour"""
+        # Flatten contour points
+        points = contour.reshape(-1, 2)
+        total_points = len(points)
+        
+        # Safety check for minimum contour size
+        if total_points < 10:
+            print(f"Warning: Contour too small ({total_points} points), skipping cuts")
+            return mask
+        
+        # Calculate step size based on cut frequency
+        step = max(1, int(1.0 / max(0.01, self.cut_frequency * self.edge_roughness)))  # Prevent division by zero
+        
+        # Create cuts at regular intervals
+        cuts_made = 0
+        for i in range(0, total_points, step):
+            if random.random() < self.cut_frequency * self.edge_roughness:
+                try:
+                    self._make_scissor_cut(mask, points, i)
+                    cuts_made += 1
+                except Exception as e:
+                    print(f"Warning: Failed to make cut at point {i}: {e}")
+                    continue
+        
+        print(f"Made {cuts_made} scissor cuts along contour")
+        return mask
+
+    def _make_scissor_cut(self, mask, contour_points, point_index):
+        """Make a single scissor cut at a specific point"""
+        if point_index >= len(contour_points):
+            return
+        
+        # Get the cut point
+        cut_point = contour_points[point_index]
+        x, y = cut_point
+        
+        # Validate cut point is within mask bounds
+        if x < 0 or y < 0 or x >= mask.shape[1] or y >= mask.shape[0]:
+            return
+        
+        # Calculate cut direction (roughly perpendicular to contour)
+        try:
+            cut_angle = self._calculate_cut_angle(contour_points, point_index)
+        except Exception as e:
+            print(f"Warning: Failed to calculate cut angle: {e}")
+            cut_angle = random.uniform(0, 2 * math.pi)  # Use random angle as fallback
+        
+        # Random cut length
+        cut_length = random.randint(self.cut_length_min, self.cut_length_max)
+        cut_length = int(cut_length * self.edge_roughness)
+        cut_length = max(1, cut_length)  # Ensure minimum cut length
+        
+        # Calculate cut end point
+        end_x = x + int(cut_length * math.cos(cut_angle))
+        end_y = y + int(cut_length * math.sin(cut_angle))
+        
+        # Clamp end point to mask bounds
+        end_x = max(0, min(mask.shape[1] - 1, end_x))
+        end_y = max(0, min(mask.shape[0] - 1, end_y))
+        
+        # Make the cut with varying width to simulate scissor blade
+        try:
+            self._draw_scissor_cut_line(mask, (x, y), (end_x, end_y))
+        except Exception as e:
+            print(f"Warning: Failed to draw cut line: {e}")
+
+    def _calculate_cut_angle(self, contour_points, point_index):
+        """Calculate the angle for a scissor cut (perpendicular to contour direction)"""
+        total_points = len(contour_points)
+        
+        # Safety check for minimum contour size
+        if total_points < 10:
+            # For very small contours, use a random angle
+            return random.uniform(0, 2 * math.pi)
+        
+        # Get neighboring points to estimate contour direction
+        neighbor_distance = min(5, total_points // 4)  # Adjust based on contour size
+        prev_idx = (point_index - neighbor_distance) % total_points
+        next_idx = (point_index + neighbor_distance) % total_points
+        
+        prev_point = contour_points[prev_idx]
+        next_point = contour_points[next_idx]
+        
+        # Calculate contour direction
+        dx = next_point[0] - prev_point[0]
+        dy = next_point[1] - prev_point[1]
+        
+        # Handle case where points are the same (very small contour)
+        if abs(dx) < 1e-6 and abs(dy) < 1e-6:
+            return random.uniform(0, 2 * math.pi)
+        
+        # Calculate perpendicular angle (cut direction)
+        contour_angle = math.atan2(dy, dx)
+        cut_angle = contour_angle + math.pi/2
+        
+        # Add some randomness to make cuts look more natural
+        cut_angle += random.uniform(-math.pi/6, math.pi/6)  # ±30 degrees variation
+        
+        return cut_angle
+
+    def _draw_scissor_cut_line(self, mask, start_point, end_point):
+        """Draw a scissor cut line that removes mask pixels"""
+        x1, y1 = start_point
+        x2, y2 = end_point
+        
+        # Validate coordinates
+        if (x1 == x2 and y1 == y2) or x1 < 0 or y1 < 0 or x2 < 0 or y2 < 0:
+            return
+        
+        # Create line points
+        line_points = self._get_line_points(x1, y1, x2, y2)
+        
+        # Safety check for empty line
+        if not line_points or len(line_points) <= 1:
+            return
+        
+        # Remove pixels along the cut with varying width
+        for i, (x, y) in enumerate(line_points):
+            # Calculate cut width (wider at the start, tapering toward the end)
+            progress = i / max(1, len(line_points) - 1)  # Prevent division by zero
+            cut_width = max(1, int(3 * (1 - progress * 0.7)))  # Ensure minimum width
+            
+            # Remove pixels in a small area around the cut point
+            for dy in range(-cut_width, cut_width + 1):
+                for dx in range(-cut_width, cut_width + 1):
+                    px, py = x + dx, y + dy
+                    if 0 <= px < mask.shape[1] and 0 <= py < mask.shape[0]:
+                        # Distance from cut line affects removal intensity
+                        distance = math.sqrt(dx*dx + dy*dy)
+                        if distance <= cut_width:
+                            removal_factor = 1.0 - (distance / max(1, cut_width))  # Prevent division by zero
+                            current_value = mask[py, px]
+                            mask[py, px] = int(current_value * (1 - removal_factor * 0.9))
+
+    def _get_line_points(self, x1, y1, x2, y2):
+        """Get all points along a line using Bresenham's algorithm"""
+        points = []
+        
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+        
+        x, y = x1, y1
+        
+        while True:
+            points.append((x, y))
+            
+            if x == x2 and y == y2:
+                break
+                
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x += sx
+            if e2 < dx:
+                err += dx
+                y += sy
+        
+        return points
+
+    def _create_drop_shadow(self, mask):
+        """Create pronounced drop shadow"""
         shadow = mask.copy()
         
-        # Multiple shadow layers for depth
+        # Apply shadow offset
         offset_x, offset_y = DEFAULT_SHADOW_OFFSET
-        
-        # Main shadow
         M = np.float32([[1, 0, offset_x], [0, 1, offset_y]])
         shadow = cv2.warpAffine(shadow, M, (mask.shape[1], mask.shape[0]))
         
-        # Secondary shadow for depth
-        M2 = np.float32([[1, 0, offset_x // 2], [0, 1, offset_y // 2]])
-        shadow2 = cv2.warpAffine(mask, M2, (mask.shape[1], mask.shape[0]))
+        # Multiple blur passes for softer shadow - ensure odd kernel sizes
+        blur_size = DEFAULT_SHADOW_BLUR
+        if blur_size % 2 == 0:  # Make sure it's odd
+            blur_size += 1
         
-        # Combine shadows
-        shadow = cv2.maximum(shadow, shadow2)
+        shadow = cv2.GaussianBlur(shadow, (blur_size, blur_size), 0)
+        shadow = cv2.GaussianBlur(shadow, (15, 15), 0)  # Additional blur (15 is already odd)
         
-        # Enhanced blur
-        shadow = cv2.GaussianBlur(shadow, (DEFAULT_SHADOW_BLUR, DEFAULT_SHADOW_BLUR), 0)
-        
-        # Apply stronger shadow intensity
+        # Apply shadow intensity
         shadow = (shadow * self.shadow_intensity).astype(np.uint8)
         
         return shadow
 
-    def _composite_image_enhanced(self, image, mask, shadow, transparent_background=True):
-        """Enhanced compositing with better contrast and paper texture simulation"""
+    def _composite_image(self, image, mask, shadow, transparent_background=True):
+        """Composite image with enhanced contrast"""
         if transparent_background:
             height, width = image.shape[:2]
             result = np.zeros((height, width, 4), dtype=np.uint8)
             
-            # Enhance image contrast slightly for paper effect
-            enhanced_image = self._enhance_for_paper_effect(image)
+            # Enhance image for paper effect
+            enhanced_image = self._enhance_image(image)
             result[:, :, :3] = enhanced_image
             
-            # Create more realistic alpha with shadow
+            # Create alpha channel with shadow effects
             mask_alpha = mask.astype(np.float32) / 255.0
             shadow_alpha = shadow.astype(np.float32) / 255.0
             
-            # Shadow creates partial transparency behind the cutout
+            # Combine mask and shadow
             combined_alpha = mask_alpha.copy()
-            shadow_effect = shadow_alpha * 0.6  # Stronger shadow effect
             
-            # Apply shadow where there's no main object
+            # Add shadow where there's no main object
             shadow_area = (mask_alpha < 0.1) & (shadow_alpha > 0.1)
-            combined_alpha[shadow_area] = shadow_effect[shadow_area]
+            combined_alpha[shadow_area] = shadow_alpha[shadow_area] * 0.7
             
             result[:, :, 3] = (combined_alpha * 255).astype(np.uint8)
             
         else:
-            # White background with more pronounced shadow
-            background = np.full_like(image, 245, dtype=np.uint8)  # Slightly off-white
+            # White background version
+            background = np.full_like(image, 250, dtype=np.uint8)
             
-            # Create shadow gradient
+            # Apply shadow to background
             shadow_3ch = cv2.cvtColor(shadow, cv2.COLOR_GRAY2BGR)
-            shadow_strength = 1.5  # Stronger shadow
-            background = background - (shadow_3ch * shadow_strength)
-            background = np.clip(background, 180, 255).astype(np.uint8)  # Keep some lightness
+            background = background - (shadow_3ch * 1.5)
+            background = np.clip(background, 200, 255).astype(np.uint8)
             
             # Enhanced image
-            enhanced_image = self._enhance_for_paper_effect(image)
+            enhanced_image = self._enhance_image(image)
             
-            # Smooth mask blending
+            # Smooth blending
             mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) / 255.0
-            mask_smooth = cv2.GaussianBlur(mask_3ch, (3, 3), 0)  # Slight blur for natural blending
             
-            result = background * (1 - mask_smooth) + enhanced_image * mask_smooth
+            result = background * (1 - mask_3ch) + enhanced_image * mask_3ch
             result = result.astype(np.uint8)
         
         return result
 
-    def _enhance_for_paper_effect(self, image):
-        """Enhance image to look more like it was printed on paper"""
-        # Slightly increase contrast and saturation
+    def _enhance_image(self, image):
+        """Enhance image to look more like printed paper"""
         enhanced = image.astype(np.float32)
         
-        # Increase contrast slightly
-        enhanced = enhanced * 1.1 - 12
+        # Increase contrast and brightness slightly
+        enhanced = enhanced * 1.15 - 15
         enhanced = np.clip(enhanced, 0, 255)
         
-        # Convert to HSV for saturation adjustment
+        # Boost saturation
         hsv = cv2.cvtColor(enhanced.astype(np.uint8), cv2.COLOR_BGR2HSV)
-        hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], 1.15)  # Increase saturation
+        hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], 1.2)
         
-        # Convert back to BGR
-        enhanced = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        
-        return enhanced
+        return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
+    # Compatibility methods for the original interface
     def _create_rough_edges(self, mask):
-        """Original method - kept for compatibility"""
-        return self._create_rough_edges_enhanced(mask)
-
-    def _create_drop_shadow(self, mask):
-        """Original method - kept for compatibility"""
-        return self._create_drop_shadow_enhanced(mask)
-
-    def _composite_image(self, image, mask, shadow, transparent_background=True):
-        """Original method - kept for compatibility"""
-        return self._composite_image_enhanced(image, mask, shadow, transparent_background)
+        """Compatibility method - redirects to scissor cuts"""
+        return self._create_scissor_cuts(mask)
