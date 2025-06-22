@@ -13,13 +13,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
         Examples:
-        # Basic usage (moderate cuts)
+        # Basic usage
         python main.py photo.jpg cutout.png
         """
     )
     
     parser.add_argument("input", help="Input image file or directory")
     parser.add_argument("output", help="Output image file or directory")
+    parser.add_argument("-o", '--outline-thickness', help="Max outline thickness of the cutout")
+    parser.add_argument("-d", "--detail", help="How big the cut lines will be, the higher the detail" \
+                        " the more polygonal the cutout will look")
 
     args = parser.parse_args()
 
