@@ -6,40 +6,26 @@ class PaperCutoutEffect:
         self.image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         self.mask = self._clean_mask(mask_array, alpha_threshold)
     
-    def create_paper_cutout(self, outline_color=(255, 0, 0), white_thickness=30, 
-                           red_thickness=3, detail=5):
+    def create_cutout(self, outline_color=(255, 0, 0), white_thickness=30, 
+                     red_thickness=3, detail=5):
         """
-        Create complete paper cutout effect: subject + white outline + red border
-        
-        Args:
-            outline_color: RGB color for outer border
-            white_thickness: Thickness of white outline (pixels)
-            red_thickness: Thickness of red border line
-            detail: Border detail level (1-10, higher = more detailed)
+        Create paper cutout with transparency outside red border
+        Everything inside border gets white background
         """
-        # Create white outline
-        white_outline = self._create_white_outline(white_thickness)
+        # Create white outline around subject
+        white_outline = self._create_outline(white_thickness)
         
-        # Create combined shape (subject + white outline)
-        combined_shape = self._create_combined_shape(white_outline)
+        # Combine subject + white outline
+        combined_shape = self.mask.copy()
+        combined_shape[white_outline > 0] = 255
+        combined_shape = self._smooth(combined_shape)
         
-        # Create red border around combined shape
+        # Create red border around the combined shape
         red_border = self._create_border(combined_shape, red_thickness, detail)
         
-        # Compose final image
-        return self._compose_final_image(white_outline, red_border, outline_color)
+        # Create final RGBA image
+        return self._compose_image(white_outline, red_border, outline_color)
     
-    def create_white_outline_only(self, thickness=30, background=(255, 255, 255)):
-        """Create just subject with white outline, no red border"""
-        white_outline = self._create_white_outline(thickness)
-        
-        result = np.full_like(self.image, background)
-        result[self.mask > 0] = self.image[self.mask > 0]  # Subject
-        result[white_outline > 0] = (255, 255, 255)       # White outline
-        
-        return result
-    
-    # Private methods (implementation details)
     def _clean_mask(self, mask_array, threshold):
         """Clean and binarize mask"""
         mask = mask_array.astype(np.uint8)
@@ -48,34 +34,23 @@ class PaperCutoutEffect:
         return mask
     
     def _smooth(self, mask):
-        """Apply consistent smoothing"""
-        # Morphological smoothing
+        """Apply smoothing to mask"""
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         smooth = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-        smooth = cv2.morphologyEx(smooth, cv2.MORPH_OPEN, kernel, iterations=1)
-        
-        # Gaussian smoothing
         smooth = cv2.GaussianBlur(smooth, (5, 5), 1.0)
         _, smooth = cv2.threshold(smooth, 127, 255, cv2.THRESH_BINARY)
-        
         return smooth
     
-    def _create_white_outline(self, thickness):
-        """Create smooth white outline extending outward"""
+    def _create_outline(self, thickness):
+        """Create white outline extending outward from subject"""
         smoothed = self._smooth(self.mask)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (thickness*2+1, thickness*2+1))
         dilated = cv2.dilate(smoothed, kernel, iterations=1)
         return dilated - smoothed
     
-    def _create_combined_shape(self, white_outline):
-        """Combine original subject with white outline"""
-        combined = self.mask.copy()
-        combined[white_outline > 0] = 255
-        return self._smooth(combined)
-    
     def _create_border(self, shape_mask, thickness, detail):
-        """Create polygonal border around shape"""
-        # Extra smoothing for polygonal border
+        """Create red border around shape"""
+        # Smooth for cleaner contours
         mask = cv2.GaussianBlur(shape_mask, (7, 7), 2.0)
         _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
         
@@ -84,7 +59,7 @@ class PaperCutoutEffect:
         
         simplified = []
         for contour in contours:
-            if cv2.contourArea(contour) > 100:  # Skip noise
+            if cv2.contourArea(contour) > 100:
                 epsilon = (0.08 / detail) * cv2.arcLength(contour, True)
                 poly = cv2.approxPolyDP(contour, epsilon, True)
                 simplified.append(poly)
@@ -94,9 +69,36 @@ class PaperCutoutEffect:
         cv2.drawContours(border, simplified, -1, 255, thickness)
         return border
     
-    def _compose_final_image(self, white_outline, red_border, outline_color):
-        """Compose final image with all elements"""
-        result = self.image.copy()
-        result[white_outline > 0] = (255, 255, 255)  # White outline
-        result[red_border > 0] = outline_color        # Red border
+    def _compose_image(self, white_outline, red_border, outline_color):
+        """Create final RGBA image with transparency outside red border"""
+        height, width = self.image.shape[:2]
+        result = np.zeros((height, width, 4), dtype=np.uint8)
+        
+        # Find what's inside the red border
+        contours, _ = cv2.findContours(red_border, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        inside_border = np.zeros((height, width), dtype=np.uint8)
+        cv2.fillPoly(inside_border, contours, 255)
+        
+        # Create visibility mask (inside border + border itself)
+        visible_area = inside_border.copy()
+        visible_area[red_border > 0] = 255
+        
+        # Set alpha channel
+        result[:, :, 3] = 0  # Everything transparent
+        result[visible_area > 0, 3] = 255  # Inside area opaque
+        
+        # Fill inside with white background
+        result[visible_area > 0, :3] = (255, 255, 255)
+        
+        # Add original subject (only where it exists inside border)
+        subject_inside = (self.mask > 0) & (visible_area > 0)
+        result[subject_inside, :3] = self.image[subject_inside]
+        
+        # Add white outline (only inside border)
+        white_inside = (white_outline > 0) & (visible_area > 0)
+        result[white_inside, :3] = (255, 255, 255)
+        
+        # Add red border
+        result[red_border > 0, :3] = outline_color
+        
         return result

@@ -37,7 +37,7 @@ class ImageProcessor:
             # Step 2: Creating a polygonal approximation of the cutout's outline
             outline_processor = PaperCutoutEffect(image_bgr, mask_array)
 
-            outlined_image = outline_processor.create_paper_cutout()
+            outlined_image = outline_processor.create_cutout(detail=15)
 
             Image.fromarray(outlined_image).save(output_path)
 
