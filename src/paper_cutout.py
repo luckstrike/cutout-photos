@@ -79,26 +79,21 @@ class PaperCutoutEffect:
         inside_border = np.zeros((height, width), dtype=np.uint8)
         cv2.fillPoly(inside_border, contours, 255)
         
-        # Create visibility mask (inside border + border itself)
-        visible_area = inside_border.copy()
-        visible_area[red_border > 0] = 255
-        
-        # Set alpha channel
+        # Set alpha channel - only inside area is opaque (border itself is transparent)
         result[:, :, 3] = 0  # Everything transparent
-        result[visible_area > 0, 3] = 255  # Inside area opaque
+        result[inside_border > 0, 3] = 255  # Only inside area opaque
         
         # Fill inside with white background
-        result[visible_area > 0, :3] = (255, 255, 255)
+        result[inside_border > 0, :3] = (255, 255, 255)
         
         # Add original subject (only where it exists inside border)
-        subject_inside = (self.mask > 0) & (visible_area > 0)
+        subject_inside = (self.mask > 0) & (inside_border > 0)
         result[subject_inside, :3] = self.image[subject_inside]
         
         # Add white outline (only inside border)
-        white_inside = (white_outline > 0) & (visible_area > 0)
+        white_inside = (white_outline > 0) & (inside_border > 0)
         result[white_inside, :3] = (255, 255, 255)
         
-        # Add red border
-        result[red_border > 0, :3] = outline_color
+        # Red border is now transparent - it only defines the boundary
         
         return result
