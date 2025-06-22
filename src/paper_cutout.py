@@ -6,22 +6,20 @@ class PaperCutoutEffect:
         self.image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         self.mask = self._clean_mask(mask_array, alpha_threshold)
     
-    def create_cutout(self, background_color=(255, 255, 255), outline_thickness=30, 
-                     border_thickness=3, detail=5):
+    def create_cutout(self, background_color=(255, 255, 255), outline_thickness=30, detail=5):
         """
         Create paper cutout with transparency outside border
         
         Args:
             background_color: RGB color for background and outline
             outline_thickness: Thickness of outline around subject
-            border_thickness: Thickness of invisible border (defines cutoff)
             detail: Border detail level (1-10, higher = more detailed)
         """
         # Create subject + outline shape
         subject_with_outline = self._create_subject_with_outline(outline_thickness)
         
-        # Create invisible border around the shape
-        border = self._create_border(subject_with_outline, border_thickness, detail)
+        # Create invisible border around the shape (fixed thickness for clean cutoff)
+        border = self._create_border(subject_with_outline, thickness=3, detail=detail)
         
         # Create final RGBA image
         return self._create_final_image(border, background_color)
