@@ -10,10 +10,10 @@ from .paper_cutout import PaperCutoutEffect  # Import the new scissor-cut effect
 class ImageProcessor:
     """Main processor for creating realistic scissor-cut paper cutout effects"""
 
-    def __init__(self, simplification=0.001, thickness=3, color=(255, 0, 0)):
-        self.simplification = simplification
-        self.thickness = thickness
-        self.color = color
+    def __init__(self, background_color=(255, 0, 0), detail=25, outline_thickness=15):
+        self.background_color = background_color
+        self.detail = detail
+        self.outline_thickness = outline_thickness
     
     def process_image(self, input_path, output_path):
         """
@@ -37,7 +37,9 @@ class ImageProcessor:
             # Step 2: Creating a polygonal approximation of the cutout's outline
             outline_processor = PaperCutoutEffect(image_bgr, mask_array)
 
-            outlined_image = outline_processor.create_cutout(background_color=(255, 19, 240), outline_thickness=15, detail=25)
+            outlined_image = outline_processor.create_cutout(background_color=self.background_color, 
+                                                             detail=self.detail, 
+                                                             outline_thickness=self.outline_thickness)
 
             Image.fromarray(outlined_image).save(output_path)
 

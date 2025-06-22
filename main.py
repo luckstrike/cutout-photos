@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 from src.processor import ImageProcessor
+from src.utils import hex_to_rgb
 
 def main():
     parser = argparse.ArgumentParser(
@@ -15,25 +16,38 @@ def main():
         Examples:
         # Basic usage
         python main.py photo.jpg cutout.png
+        # Changing the outline thickness, detail level, and color
+        python main.py -o 25 -d 50 -b FF0000 photo.jpg cutout.png
         """
     )
     
-    parser.add_argument("input", help="Input image file or directory")
-    parser.add_argument("output", help="Output image file or directory")
-    parser.add_argument("-o", '--outline-thickness', help="Max outline thickness of the cutout")
-    parser.add_argument("-d", "--detail", help="How big the cut lines will be, the higher the detail" \
+    parser.add_argument("input", 
+                        help="Input image file or directory")
+    parser.add_argument("output", 
+                        help="Output image file or directory")
+    parser.add_argument("-o", '--outline_thickness',
+                        default=15,
+                        help="Max outline thickness of the cutout")
+    parser.add_argument("-d", "--detail",
+                        default=25,
+                        help="How big the cut lines will be, the higher the detail" \
                         " the more polygonal the cutout will look")
-
+    parser.add_argument("-b", "--background_color",
+                        default="#FFFFFF", 
+                        help="Hex code for background color of the cutout's outline")
     args = parser.parse_args()
 
     # Validate inputs
     if not os.path.exists(args.input):
         print(f"Error: Input path '{args.input}' does not exist")
         sys.exit(1)
-
     
     # Create processor with selected settings
-    processor = ImageProcessor()
+    processor = ImageProcessor(
+        background_color=hex_to_rgb(args.background_color),
+        detail=int(args.detail),
+        outline_thickness=int(args.outline_thickness)
+    )
 
     # Process input
     if os.path.isfile(args.input):
