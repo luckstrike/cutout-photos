@@ -1,6 +1,6 @@
 Idea:
-- Create a Python based GUI app where you can provide and image and have it remove its background
-  and then make it look like it was cut out from a piece of paper
+- Create a Svelte + FastAPI based app 
+  - Why Svelte + FastAPI?: Because I can... haha
 - It would be nice to have the GUI show you a preview of the image and also let you change show
   the edges look on it
 - Would also be nice to choose what the main subject is (but this might be a future feature)

@@ -5,4 +5,3 @@ scipy>=1.10.0
 rembg>=2.0.0
 pillow>=9.5.0
 onnxruntime>=1.15.0
-PySide6>=6.9.0
