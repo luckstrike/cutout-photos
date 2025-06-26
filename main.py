@@ -5,8 +5,8 @@ Paper Cutout Photo Effect - Scissor-Cut CLI with Enhanced Control
 import argparse
 import os
 import sys
-from src.processor import ImageProcessor
-from src.utils import hex_to_rgb
+from backend.core.processor import ImageProcessor
+from backend.core.utils import hex_to_rgb
 
 def main():
     parser = argparse.ArgumentParser(
