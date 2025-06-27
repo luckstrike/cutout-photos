@@ -17,7 +17,7 @@ async def root():
     return {"message": "Paper Cutout API", "docs": "/docs"}
 
 @app.post("/api/upload")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile):
     pass
 
 @app.post("/api/process")
