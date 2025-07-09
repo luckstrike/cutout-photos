@@ -1,8 +1,9 @@
 <script lang="ts">
-    import Navbar from "$lib/components/Navbar.svelte";
+    import { Button } from "$lib/components/ui/button/index.js";
+    import { Slider } from "$lib/components/ui/slider/index.js";
+    
+    let value = $state(50);
 </script>
-
-<div class="flex-col w-screen h-screen p-2 bg-[#121212]">
-    <Navbar/>
-    <h1 class="text-2xl text-white">Hello World</h1>
-</div>
+ 
+<Button>Click me</Button>
+<Slider type="single" bind:value max={100} step={1} class="max-w-[70%]" />
