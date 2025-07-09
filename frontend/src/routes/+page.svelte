@@ -1,9 +1,7 @@
 <script lang="ts">
-    import { Button } from "$lib/components/ui/button/index.js";
-    import { Slider } from "$lib/components/ui/slider/index.js";
-    
-    let value = $state(50);
+    import CutoutOptions from "$lib/components/panels/cutoutOptions.svelte";
 </script>
- 
-<Button>Click me</Button>
-<Slider type="single" bind:value max={100} step={1} class="max-w-[70%]" />
+
+<div class="flex-col w-screen h-screen p-2">
+    <CutoutOptions/>
+</div>
