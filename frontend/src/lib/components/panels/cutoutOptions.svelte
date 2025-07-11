@@ -1,23 +1,29 @@
 <script lang="ts">
     import { Slider } from "$lib/components/ui/slider/index.js";
 	import Button from "$lib/components/ui/button/button.svelte";
+	import Label from "$lib/components/ui/label/label.svelte";
     
     let outlineThickness = $state(50);
     let detailValue = $state(25);
 </script>
 
 <div class="flex flex-col min-w-xs gap-4 border-1 rounded-2xl p-4">
+    <div class="flex flex-col text-xl font-bold gap-1">
+        <div>Cutout Options</div>
+        <hr class="border-1" />
+    </div>
     <div class="flex flex-col gap-2">
-        <p>Outline Thickness</p>
-        <Slider type="single" bind:value={outlineThickness} max={100} step={1} class="max-w" />
+        <Label for="outline-value">Outline Thickness</Label>
+        <Slider type="single" bind:value={outlineThickness} max={100} step={1} class="max-w" id="outline-value" />
     </div>
     
     <div class="flex flex-col gap-2">
-        <p>Detail Value</p>
-        <Slider type="single" bind:value={detailValue} max={50} step={1} class="max-w" />
+        <Label for="detail-value">Detail Value</Label>
+        <Slider type="single" bind:value={detailValue} max={50} step={1} class="max-w" id="detail-value" />
     </div>
     <div class="flex flex-col gap-2">
-        <p>Outline Color</p>
+        <Label for="outline-color">Outline Color</Label>
+        <p class="text-gray-400">*insert color picker here*</p>
     </div>
     <div>
         <Button variant="outline">Create Cutout</Button>
