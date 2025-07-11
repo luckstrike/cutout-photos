@@ -2,6 +2,7 @@
     import { Slider } from "$lib/components/ui/slider/index.js";
 	import Button from "$lib/components/ui/button/button.svelte";
 	import Label from "$lib/components/ui/label/label.svelte";
+	import ColorPicker from "../ui/colorPicker/colorPicker.svelte";
     
     let outlineThickness = $state(50);
     let detailValue = $state(25);
@@ -25,6 +26,7 @@
         <Label for="outline-color">Outline Color</Label>
         <p class="text-gray-400">*insert color picker here*</p>
     </div>
+    <ColorPicker />
     <div>
         <Button variant="outline">Create Cutout</Button>
     </div>
