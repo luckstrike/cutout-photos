@@ -1,12 +1,11 @@
 <script lang="ts">
-	import AspectRatio from "../ui/aspect-ratio/aspect-ratio.svelte";
+	import AspectRatio from "$lib/components/ui/aspect-ratio/aspect-ratio.svelte";
+	import UploadImage from "$lib/components/ui/uploadImage/uploadImage.svelte";
 </script>
 
 <div class="flex flex-col w-sm gap-2">
     <AspectRatio ratio={1} class="border-2 rounded-lg bg-muted">
         <img src="/images/giraffe-compressed.jpg" alt="..." class="w-full h-full rounded-lg object-cover" />
     </AspectRatio>
-    <div>
-        Upload an image
-    </div>
+    <UploadImage />
 </div>

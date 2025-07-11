@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Slider } from "$lib/components/ui/slider/index.js";
+	import Button from "$lib/components/ui/button/button.svelte";
     
     let outlineThickness = $state(50);
     let detailValue = $state(25);
@@ -17,5 +18,8 @@
     </div>
     <div class="flex flex-col gap-2">
         <p>Outline Color</p>
+    </div>
+    <div>
+        <Button variant="outline">Create Cutout</Button>
     </div>
 </div>
