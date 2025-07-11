@@ -5,7 +5,7 @@
     import FileCheck from "@lucide/svelte/icons/file-check";
 	import Label from "../label/label.svelte";
 
-    let files = $state(undefined);
+    let files : FileList | undefined = $state(undefined);
 </script>
 
 <div class="flex w-full">
