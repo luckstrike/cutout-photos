@@ -3,7 +3,7 @@
 	import Button from "../ui/button/button.svelte";
 </script>
 
-<div class="flex justify-end space-x-2">
+<div class="flex justify-end gap-2">
     <Button variant="outline" href="/">Home</Button>
     <ModeToggle />
 </div>
