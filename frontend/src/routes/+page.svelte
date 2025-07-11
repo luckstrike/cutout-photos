@@ -8,7 +8,7 @@
     <Navbar />
     <div class="flex flex-col items-center flex-1 gap-6">
         <h1 class="text-3xl font-semibold">Create a Cutout</h1>
-        <div class="flex flex-1 max-w-4xl gap-8 p-2 items-center">
+        <div class="flex flex-col md:flex-row flex-1 max-w-4xl gap-8 p-2 items-center">
             <SelectImage />
             <CutoutOptions/>        
         </div>
