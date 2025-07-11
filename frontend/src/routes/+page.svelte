@@ -1,6 +1,7 @@
 <script lang="ts">
     import CutoutOptions from "$lib/components/panels/cutoutOptions.svelte";
     import Navbar from "$lib/components/panels/navbar.svelte";
+	import SelectImage from "$lib/components/panels/selectImage.svelte";
 </script>
 
 <div class="flex flex-col h-screen p-4 gap-4">
@@ -8,7 +9,7 @@
     <div class="flex flex-col items-center flex-1 gap-6">
         <h1 class="text-3xl font-semibold">Create a Cutout</h1>
         <div class="flex flex-1 max-w-4xl gap-8 p-2 items-center">
-            <div class="">Insert a preview of the image here</div>
+            <SelectImage />
             <CutoutOptions/>        
         </div>
     </div>
