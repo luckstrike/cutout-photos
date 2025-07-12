@@ -24,7 +24,6 @@
     </div>
     <div class="flex flex-col gap-2">
         <Label for="outline-color">Outline Color</Label>
-        <p class="text-gray-400">*insert color picker here*</p>
     </div>
     <ColorPicker />
     <div>
