@@ -24,8 +24,8 @@
     </div>
     <div class="flex flex-col gap-2">
         <Label for="outline-color">Outline Color</Label>
+        <ColorPicker/>
     </div>
-    <ColorPicker />
     <div>
         <Button variant="outline">Create Cutout</Button>
     </div>
