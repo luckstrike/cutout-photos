@@ -31,11 +31,13 @@
 	<div class="flex flex-col gap-1">
 		<Label for="image-preview">Image Preview</Label>
 		<AspectRatio ratio={1} class="bg-muted rounded-lg border-2" id="image-preview">
-			<img
-				src={imageURL}
-				alt="..."
-				class="h-full w-full rounded-lg object-cover"
-			/>
+            {#if selectedFile}
+                <img
+                    src={imageURL}
+                    alt="..."
+                    class="h-full w-full rounded-lg object-cover text-center"
+                />
+            {/if}
 		</AspectRatio>
 	</div>
 	<UploadImage onFileSelect={handleFileSelect} />
