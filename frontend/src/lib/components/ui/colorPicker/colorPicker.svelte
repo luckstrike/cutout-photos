@@ -111,7 +111,7 @@
                     onmousedown={startDrag}
                 >
                     <div 
-                        class="absolute -left-[3px] w-[26px] h-2.5 bg-background border-2 border-border rounded pointer-events-none shadow-md transition-all"
+                        class="absolute -left-[3px] w-[26px] h-3 bg-card border-1 border-gray-500 rounded pointer-events-none shadow-md transition-all"
                         style="top: {(hue / 360) * SIZE - 5}px;"
                     ></div>
                 </div>
