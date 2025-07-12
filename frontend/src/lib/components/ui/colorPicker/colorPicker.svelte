@@ -3,13 +3,18 @@
     let hexColor = $state("#0000ff");
     let hue = $state(240);
     let dragging = $state(false);
+    let marker = $state({ x: 100, y: 100 });
 
     const SIZE = 200;
+    const MARKER_SIZE = 12;
+    const MARKER_OFFSET = MARKER_SIZE / 2;
 
-    function getPixelColor(event: MouseEvent) {
+    function selectColor(event: MouseEvent) {
         const ctx = canvas.getContext('2d')!;
         const [r, g, b] = ctx.getImageData(event.offsetX, event.offsetY, 1, 1).data;
+        
         hexColor = `#${[r, g, b].map(c => c.toString(16).padStart(2, '0')).join('')}`;
+        marker = { x: event.offsetX, y: event.offsetY };
     }
 
     function drawGradient() {
@@ -58,12 +63,8 @@
         dragging = false;
     }
 
-    // Redraw when hue changes
-    $effect(() => {
-        drawGradient();
-    });
+    $effect(() => drawGradient());
 
-    // Global drag handlers
     $effect(() => {
         document.addEventListener('mousemove', handleGlobalMove);
         document.addEventListener('mouseup', stopDrag);
@@ -87,13 +88,21 @@
         
         <!-- Picker -->
         <div class="flex gap-4">
-            <canvas 
-                bind:this={canvas}
-                width={SIZE}
-                height={SIZE}
-                class="size-[200px] rounded-md border cursor-crosshair shadow-sm hover:shadow-md transition-shadow"
-                onmousemove={getPixelColor}
-            ></canvas>
+            <div class="relative">
+                <canvas 
+                    bind:this={canvas}
+                    width={SIZE}
+                    height={SIZE}
+                    class="size-[200px] rounded-md border cursor-crosshair shadow-sm hover:shadow-md transition-shadow"
+                    onclick={selectColor}
+                ></canvas>
+                
+                <!-- Selection marker -->
+                <div 
+                    class="absolute size-3 border-2 border-white rounded-full pointer-events-none transition-all duration-200 shadow-lg ring-1 ring-black/30"
+                    style="left: {marker.x - MARKER_OFFSET}px; top: {marker.y - MARKER_OFFSET}px;"
+                ></div>
+            </div>
             
             <div class="flex flex-col items-center gap-3">
                 <div 
