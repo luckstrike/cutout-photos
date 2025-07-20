@@ -15,7 +15,7 @@ class ImageProcessor:
         self.detail = detail
         self.outline_thickness = outline_thickness
 
-    def process_PIL_image(self, image: Image):
+    def process_PIL_image(self, image: Image, output_path: str):
         """
         Process a PIL image: remove background + apply scissor-cut effect
 
@@ -23,7 +23,7 @@ class ImageProcessor:
             image (Image): A PIL image object
         
         Returns:
-            Image: An image if successful or None if something went wrong
+            bool: True if successful, False otherwise
         """
         try:
             print(f"Processing a PIL image...")
@@ -31,12 +31,23 @@ class ImageProcessor:
             # Step 1: Remove background
             print("Removing the background")
             bg_remover = BackgroundRemover()
+            image_bgr, mask_array = bg_remover.image_to_lists(image)
             # Step 2: Creating a polygonal approximation of the cutout's outline
+            
+            outline_processor = PaperCutoutEffect(image_bgr, mask_array)
+
+            outlined_image = outline_processor.create_cutout(background_color=self.background_color, 
+                                                             detail=self.detail, 
+                                                             outline_thickness=self.outline_thickness)
+
+            Image.fromarray(outlined_image).save(output_path)
+
+            return True
         except Exception as e:
             print(f"Error processing the PIL image: {e}")
             return None
      
-    def process_image(self, input_path, output_path):
+    def process_image(self, input_path: str, output_path: str):
         """
         Process a single image: remove background + apply scissor-cut effect
 
