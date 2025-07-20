@@ -14,7 +14,28 @@ class ImageProcessor:
         self.background_color = background_color
         self.detail = detail
         self.outline_thickness = outline_thickness
-    
+
+    def process_PIL_image(self, image: Image):
+        """
+        Process a PIL image: remove background + apply scissor-cut effect
+
+        Args:
+            image (Image): A PIL image object
+        
+        Returns:
+            Image: An image if successful or None if something went wrong
+        """
+        try:
+            print(f"Processing a PIL image...")
+
+            # Step 1: Remove background
+            print("Removing the background")
+            bg_remover = BackgroundRemover()
+            # Step 2: Creating a polygonal approximation of the cutout's outline
+        except Exception as e:
+            print(f"Error processing the PIL image: {e}")
+            return None
+     
     def process_image(self, input_path, output_path):
         """
         Process a single image: remove background + apply scissor-cut effect
@@ -31,8 +52,8 @@ class ImageProcessor:
 
             # Step 1: Remove background
             print("Removing the background...")
-            bg_remover = BackgroundRemover(input_path, output_path)
-            image_bgr, mask_array = bg_remover.remove_background_to_array()
+            bg_remover = BackgroundRemover()
+            image_bgr, mask_array = bg_remover.file_to_lists(input_path)
 
             # Step 2: Creating a polygonal approximation of the cutout's outline
             outline_processor = PaperCutoutEffect(image_bgr, mask_array)

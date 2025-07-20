@@ -8,23 +8,16 @@ from PIL import Image
 from rembg import remove
 
 
-# TODO: Add in smart format detection
-#       to detect how a file should be saved (.png/.jpg/etc...)
 class BackgroundRemover:
     """Handle background removal from images"""
+    def __init__(self):
+        pass
 
-    def __init__(self, input_path, output_path):
-        self.input_path = input_path
-        self.output_path = output_path
-
-    def remove_background_to_image(self):
-        input = Image.open(self.input_path)
-        output = remove(input)
-        output.save(self.output_path)
-
-    def remove_background_to_array(self):
-        input_img = Image.open(self.input_path)
-        output = remove(input_img)
+    def image_to_lists(self, input_image: Image):
+        if input_image is None:
+            return None
+        
+        output = remove(input_image)
 
         # Converting the PIL Image to Numpy Arrays
         image_array = np.array(output.convert("RGB"))
@@ -34,9 +27,27 @@ class BackgroundRemover:
 
         return image_bgr, mask_array
     
-if __name__ == "__main__":
-    INPUT_PATH = "../examples/input/giraffe.jpg"
-    OUTPUT_PATH = "../examples/output/giraffe_no_background.png"
+    def file_to_lists(self, input_path):
+        if input_path is None:
+            return None
+        
+        input_image = Image.open(input_path)
 
-    bg_removal_obj = BackgroundRemover(INPUT_PATH, OUTPUT_PATH)
-    bg_removal_obj.remove_background_to_image()
+        image_bgr, mask_array = self.image_to_lists(input_image)
+
+        return image_bgr, mask_array
+    
+    def save_to_disk(self, input_path, output_path):
+        try:
+            input_image = Image.open(input_path)
+            output_image = remove(input_image)
+            output_image.save(output_path)
+        except Exception as e:
+            print(f"file_to_disk: {e}")
+
+if __name__ == "__main__":
+    INPUT_PATH = "../../examples/input/giraffe.jpg"
+    OUTPUT_PATH = "../../examples/output/giraffe_no_background.png"
+
+    bg_removal_obj = BackgroundRemover()
+    bg_removal_obj.save_to_disk(INPUT_PATH, OUTPUT_PATH)
