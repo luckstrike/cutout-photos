@@ -9,15 +9,15 @@
     let outlineColor = $state("");
 
     interface Props {
-        handleOutlineThicknessChange: (thickness: number) => void;
-        handleDetailValueChange: (detail: number) => void;
-        handleOutlineColorChange: (hexColor: string) => void;
+        handleOutlineThicknessChange?: (thickness: number) => void;
+        handleDetailValueChange?: (detail: number) => void;
+        handleOutlineColorChange?: (hexColor: string) => void;
     }
 
     let { 
-        handleOutlineThicknessChange,
-        handleDetailValueChange,
-        handleOutlineColorChange
+        handleOutlineThicknessChange = () => {},
+        handleDetailValueChange = () => {},
+        handleOutlineColorChange = () => {}
     } = $props();
 
     function onOutlineColorChange(hexColor: string) {

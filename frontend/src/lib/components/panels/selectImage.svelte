@@ -7,10 +7,10 @@
     let imageURL : string | null = $derived(selectedFile ? URL.createObjectURL(selectedFile) : null);
 
     interface Props {
-        handleFileSelect: (file: File | null) => void;
+        handleFileSelect?: (file: File | null) => void;
     }
 
-    let { handleFileSelect } : Props = $props();
+    let { handleFileSelect = () => {} } : Props = $props();
 
     function onFileSelect(file: File) {
         if (!file) {

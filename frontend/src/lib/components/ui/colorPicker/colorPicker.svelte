@@ -6,10 +6,10 @@
     let hexColor = $state("#0000ff");
 
     interface Props {
-        onHexColorChange : (hexColor: string) => void;
+        onHexColorChange?: (hexColor: string) => void;
     }
     
-    let { onHexColorChange }: Props = $props();
+    let { onHexColorChange = () => {} }: Props = $props();
 
     const SIZE = 200;
     const MARKER_SIZE = 12;
