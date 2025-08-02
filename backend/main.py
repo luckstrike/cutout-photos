@@ -1,7 +1,7 @@
 import io
 import uuid
 from PIL import Image
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from core.processor import ImageProcessor
 from core.utils import hex_to_rgb
@@ -24,7 +24,10 @@ async def root():
     return {"message": "Paper Cutout API", "docs": "/docs"}
 
 @app.post("/api/upload")
-async def upload_image(file: UploadFile, outline_thickness: int, detail: int, outline_color: str):
+async def upload_image(file: UploadFile = File(...), 
+                        outline_thickness: int = Form(...), 
+                        detail: int = Form(...),
+                        outline_color: str = Form(...)):
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
@@ -44,8 +47,8 @@ async def upload_image(file: UploadFile, outline_thickness: int, detail: int, ou
         # Create processor with selected settings
         processor = ImageProcessor(
             background_color=hex_to_rgb(outline_color),
-            detail=int(detail),
-            outline_thickness=int(outline_thickness)
+            detail=detail,
+            outline_thickness=outline_thickness
         )
 
         random_id = str(uuid.uuid4())

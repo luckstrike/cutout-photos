@@ -64,12 +64,16 @@
             }
 
             const result = await response.json();
+
+            return result;
+
         } catch (error) {
             console.error('Upload failed:', error);
         } finally {
             isLoading = false;
         }
 
+        return;
     }
 
     $effect(() => {
@@ -80,6 +84,7 @@
              * 2. Get cutout image result back 
              * 3. Update the image shown by SelectImage
              */
+            uploadData();
         }
 
         const debouncedCutout = debounce(createCutout, debounceTiming);
