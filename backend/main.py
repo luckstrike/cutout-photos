@@ -1,7 +1,7 @@
 import io
 import uuid
 from PIL import Image
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, Response, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from core.processor import ImageProcessor
 from core.utils import hex_to_rgb
@@ -40,7 +40,6 @@ async def upload_image(file: UploadFile = File(...),
     content = await file.read()
 
     image_stream = io.BytesIO(content)
-
     input_image = Image.open(image_stream)
 
     try:
@@ -51,10 +50,27 @@ async def upload_image(file: UploadFile = File(...),
             outline_thickness=outline_thickness
         )
 
-        random_id = str(uuid.uuid4())
-        output_path = "output/" + random_id + "_processed.png"
+        processed_image = processor.process_PIL_image(input_image)
 
-        success = processor.process_image(image_stream, output_path)
+        if not processed_image:
+            raise RuntimeError("Failed to process image")
+        
+        # Output Stream
+        output_stream = io.BytesIO()
+        processed_image.save(output_stream, format="PNG")
+        output_stream.seek(0)
+        image_bytes = output_stream.getvalue()
+        
+        return Response(
+            content=image_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": "inline; filename=processed_image.png",
+                "X-Original-Size": f"{processed_image.size[0]}x{processed_image.size[1]}",
+                "X-File-Size": str(len(image_bytes))
+            }
+        )
+
     except Exception as e:
         # Log the error for debugging
         print(f"Error processing image: {str(e)}")
@@ -65,13 +81,6 @@ async def upload_image(file: UploadFile = File(...),
         )
 
 
-    return {
-        "filename": output_path,
-        "format": input_image.format,
-        "size": input_image.size,
-        "mode": input_image.mode,
-        "file_size_bytes": len(content)
-    }
 
 @app.post("/api/process")
 async def process_image():
