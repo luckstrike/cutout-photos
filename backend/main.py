@@ -11,13 +11,13 @@ app = FastAPI(title="Paper Cutout API", version="1.0.0")
 MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 # Enable CORS
-#app.add_middleware(
-#    CORSMiddleware,
-#    allow_origin=["http://localhost:5173"], # Svelte dev server
-#    allow_credential=True,
-#    allow_methods=["*"],
-#    allow_headers=["*"]
-#)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], # Svelte dev server
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"]
+)
 
 @app.get("/")
 async def root():

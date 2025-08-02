@@ -5,6 +5,9 @@
 
     import debounce from 'lodash.debounce';
 
+    const API_BASE = "http://127.0.0.1:8000"; // FastAPI server
+
+    let isLoading = false;
     let debounceTiming: number = 300; // in ms
 
     let fileObj: File | null = $state(null);
@@ -35,6 +38,39 @@
         outlineColor = hexColor;
     }
 
+    async function uploadData() {
+        if (!fileObj) {
+            return;
+        }
+
+        isLoading = true;
+
+        try {
+            const formData = new FormData();
+
+            formData.append('outline_thickness', outlineThickness.toString());
+            formData.append('detail', detailValue.toString());
+            formData.append('outline_color', outlineColor);
+
+            formData.append('file', fileObj);
+
+            const response = await fetch(`${API_BASE}/api/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.json();
+        } catch (error) {
+            console.error('Upload failed:', error);
+        } finally {
+            isLoading = false;
+        }
+
+    }
 
     $effect(() => {
         // TODO: When a file and options are selected, we can now process something!
