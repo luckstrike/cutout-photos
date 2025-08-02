@@ -1,9 +1,15 @@
 <script lang="ts">
     let canvas: HTMLCanvasElement;
-    let hexColor = $state("#0000ff");
     let hue = $state(240);
     let dragging = $state(false);
     let marker = $state({ x: 100, y: 100 });
+    let hexColor = $state("#0000ff");
+
+    interface Props {
+        onHexColorChange : (hexColor: string) => void;
+    }
+    
+    let { onHexColorChange }: Props = $props();
 
     const SIZE = 200;
     const MARKER_SIZE = 12;
@@ -73,6 +79,10 @@
             document.removeEventListener('mouseup', stopDrag);
         };
     });
+
+    $effect(() => {
+        onHexColorChange(hexColor);
+    })
 </script>
 
 <div class="rounded-lg border bg-card p-6 shadow-sm">

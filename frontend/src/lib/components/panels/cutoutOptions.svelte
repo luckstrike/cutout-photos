@@ -6,6 +6,30 @@
     
     let outlineThickness = $state(50);
     let detailValue = $state(25);
+    let outlineColor = $state("");
+
+    interface Props {
+        handleOutlineThicknessChange: (thickness: number) => void;
+        handleDetailValueChange: (detail: number) => void;
+        handleOutlineColorChange: (hexColor: string) => void;
+    }
+
+    let { 
+        handleOutlineThicknessChange,
+        handleDetailValueChange,
+        handleOutlineColorChange
+    } = $props();
+
+    function onOutlineColorChange(hexColor: string) {
+        outlineColor = hexColor;
+    }
+
+    $effect(() => {
+        handleOutlineThicknessChange(outlineThickness);
+        handleDetailValueChange(detailValue);
+        handleOutlineColorChange(outlineColor);
+    })
+
 </script>
 
 <div class="flex flex-col min-w-xs gap-4 border-1 rounded-2xl p-4">
@@ -24,7 +48,7 @@
     </div>
     <div class="flex flex-col gap-2">
         <Label for="outline-color">Outline Color</Label>
-        <ColorPicker/>
+        <ColorPicker onHexColorChange={onOutlineColorChange}/>
     </div>
     <div>
         <Button variant="outline">Create Cutout</Button>

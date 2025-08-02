@@ -3,18 +3,22 @@
 	import UploadImage from '$lib/components/ui/uploadImage/uploadImage.svelte';
 	import Label from '../ui/label/label.svelte';
 
-    let maxFileSize : number = 5000000; // 5MB
-
     let selectedFile : File | null = $state(null);
     let imageURL : string | null = $derived(selectedFile ? URL.createObjectURL(selectedFile) : null);
 
-	function handleFileSelect(file: File) {
-        if (file && file.type.startsWith('image/') && file.size < maxFileSize) {
-            selectedFile = file;
-        } else {
-            // TODO: Change this to a Toast
-            alert('Please select a valid image under 5MB')
+    interface Props {
+        handleFileSelect: (file: File | null) => void;
+    }
+
+    let { handleFileSelect } : Props = $props();
+
+    function onFileSelect(file: File) {
+        if (!file) {
+            return;
         }
+
+        selectedFile = file;
+        handleFileSelect(selectedFile);
     }
 
     // Cleanup Function
@@ -40,5 +44,5 @@
             {/if}
 		</AspectRatio>
 	</div>
-	<UploadImage onFileSelect={handleFileSelect} />
+	<UploadImage {onFileSelect} />
 </div>
