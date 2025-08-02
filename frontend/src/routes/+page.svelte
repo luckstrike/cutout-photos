@@ -4,6 +4,7 @@
 	import SelectImage from "$lib/components/panels/selectImage.svelte";
 
     import debounce from 'lodash.debounce';
+	import { onDestroy } from "svelte";
 
     const API_BASE = "http://127.0.0.1:8000"; // FastAPI server
 
@@ -19,6 +20,13 @@
     let detailValue : number = $state(0);
     let outlineColor: string = $state("");
 
+    function cleanUpImageUrl(): void {
+        if (imageUrl) {
+            URL.revokeObjectURL(imageUrl);
+            imageUrl = null;
+        }
+    }
+    
     function handleFileSelect(file: File | null) : void {
         if (!file) {
             return;
@@ -62,6 +70,9 @@
 
             if (response.ok) {
                 const blob = await response.blob();
+
+                cleanUpImageUrl();
+
                 imageUrl = URL.createObjectURL(blob);
                 
                 // Get metadata from headers if you added them
@@ -102,6 +113,10 @@
         return () => {
             debouncedCutout.cancel();
         };
+    });
+
+    onDestroy(() => {
+        cleanUpImageUrl();
     });
 </script>
 
