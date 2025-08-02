@@ -4,31 +4,15 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import ColorPicker from "../ui/colorPicker/colorPicker.svelte";
     
-    let outlineThickness = $state(50);
-    let detailValue = $state(25);
-    let outlineColor = $state("");
-
-    interface Props {
-        handleOutlineThicknessChange?: (thickness: number) => void;
-        handleDetailValueChange?: (detail: number) => void;
-        handleOutlineColorChange?: (hexColor: string) => void;
-    }
-
-    let { 
-        handleOutlineThicknessChange = () => {},
-        handleDetailValueChange = () => {},
-        handleOutlineColorChange = () => {}
+    let {
+        outlineThickness = $bindable(50),
+        detailValue = $bindable(25),
+        outlineColor = $bindable("")
     } = $props();
 
     function onOutlineColorChange(hexColor: string) {
         outlineColor = hexColor;
     }
-
-    $effect(() => {
-        handleOutlineThicknessChange(outlineThickness);
-        handleDetailValueChange(detailValue);
-        handleOutlineColorChange(outlineColor);
-    })
 
 </script>
 

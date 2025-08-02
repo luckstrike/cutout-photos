@@ -16,9 +16,9 @@
     let imageUrl : string | null = $state(null);
     let error : string | null = $state(null);
 
-    let outlineThickness : number = $state(0);
-    let detailValue : number = $state(0);
-    let outlineColor: string = $state("");
+    let outlineThickness : number = $state(50);
+    let detailValue : number = $state(25);
+    let outlineColor: string = $state("#0000FF");
 
     function cleanUpImageUrl(): void {
         if (imageUrl) {
@@ -35,18 +35,6 @@
         if (file.type.startsWith('image/')) {
             fileObj = file;
         }
-    }
-
-    function handleOutlineThicknessChange(thickness: number): void {
-        outlineThickness = thickness;
-    }
-
-    function handleDetailValueChange(detail: number): void {
-        detailValue = detail;
-    }
-
-    function handleOutlineColorChange(hexColor: string): void {
-        outlineColor = hexColor;
     }
 
     async function uploadData() {
@@ -126,10 +114,10 @@
         <h1 class="text-3xl font-semibold">Create a Cutout</h1>
         <div class="flex flex-col md:flex-row flex-1 max-w-4xl gap-8 p-2 items-center">
             <SelectImage {handleFileSelect}/>
-            <CutoutOptions 
-                {handleOutlineThicknessChange}
-                {handleDetailValueChange}
-                {handleOutlineColorChange}
+            <CutoutOptions
+                bind:outlineThickness
+                bind:detailValue
+                bind:outlineColor
             />
         </div>
     </div>
