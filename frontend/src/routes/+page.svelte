@@ -7,10 +7,13 @@
 
     const API_BASE = "http://127.0.0.1:8000"; // FastAPI server
 
-    let isLoading = false;
     let debounceTiming: number = 300; // in ms
 
     let fileObj: File | null = $state(null);
+    
+    let isLoading : boolean = $state(false);
+    let imageUrl : string | null = $state(null);
+    let error : string | null = $state(null);
 
     let outlineThickness : number = $state(0);
     let detailValue : number = $state(0);
@@ -43,8 +46,6 @@
             return;
         }
 
-        isLoading = true;
-
         try {
             const formData = new FormData();
 
@@ -59,16 +60,27 @@
                 body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            if (response.ok) {
+                const blob = await response.blob();
+                imageUrl = URL.createObjectURL(blob);
+                
+                // Get metadata from headers if you added them
+                const fileSize = response.headers.get('X-File-Size');
+
+                return imageUrl;
+            } else {
+                // Error responses might still be JSON
+                try {
+                    const errorData = await response.json();
+                    error = errorData.detail || 'Upload failed';
+                } catch {
+                    // If error response isn't JSON either
+                    error = `HTTP ${response.status}: ${response.statusText}`;
+                }
             }
 
-            const result = await response.json();
-
-            return result;
-
-        } catch (error) {
-            console.error('Upload failed:', error);
+        } catch (err : any) {
+            error = 'Request failed: ' + err.message;
         } finally {
             isLoading = false;
         }
@@ -77,14 +89,8 @@
     }
 
     $effect(() => {
-        // TODO: When a file and options are selected, we can now process something!
         const createCutout = () => {
-            /* 
-             * 1. Reach out to REST API
-             * 2. Get cutout image result back 
-             * 3. Update the image shown by SelectImage
-             */
-            uploadData();
+            const result = uploadData();
         }
 
         const debouncedCutout = debounce(createCutout, debounceTiming);
