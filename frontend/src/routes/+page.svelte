@@ -87,24 +87,20 @@
         return;
     }
 
-    $effect(() => {
-        const createCutout = () => {
-            const result = uploadData();
-        }
-
-        const debouncedCutout = debounce(createCutout, debounceTiming);
-
+    const debouncedUploadData = debounce(() => {
         if (fileObj) {
-            debouncedCutout();
+            uploadData();
         }
+    }, debounceTiming);
 
-        return () => {
-            debouncedCutout.cancel();
-        };
+    $effect(() => {
+        if (fileObj && outlineThickness !== undefined && detailValue !== undefined && outlineColor) {
+            debouncedUploadData();
+        }
     });
 
     onDestroy(() => {
-        cleanUpImageUrl();
+        debouncedUploadData.cancel();
     });
 </script>
 
