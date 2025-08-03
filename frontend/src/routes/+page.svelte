@@ -11,6 +11,7 @@
     let debounceTiming: number = 300; // in ms
 
     let selectedFile: File | null = $state(null);
+    let lastProcessedFile: File | null = null;
     let displayImageUrl : string | null = $state(null);
     
     let isLoading : boolean = $state(false);
@@ -58,7 +59,7 @@
         return;
     }
 
-    const debouncedUploadData = debounce(() => {
+    const debouncedProcess = debounce(() => {
         if (selectedFile) {
             uploadData();
         }
@@ -66,12 +67,23 @@
 
     $effect(() => {
         if (selectedFile && outlineThickness && detailValue && outlineColor) {
-            debouncedUploadData();
+            if (selectedFile !== lastProcessedFile) {
+                if (displayImageUrl) {
+                    URL.revokeObjectURL(displayImageUrl);
+                }
+                displayImageUrl = URL.createObjectURL(selectedFile);
+                isLoading = false;
+                lastProcessedFile = selectedFile;
+
+                debouncedProcess();
+            } else {
+                debouncedProcess();
+            }
         }
     });
 
     onDestroy(() => {
-        debouncedUploadData.cancel();
+        debouncedProcess.cancel();
 
         if (displayImageUrl) {
             URL.revokeObjectURL(displayImageUrl);
