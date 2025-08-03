@@ -15,6 +15,7 @@
     let fileChanged : boolean = $state(false);
     
     let isLoading : boolean = $state(false);
+    let processedCutout : boolean = $state(false);
     let error : string | null = $state(null);
 
     let outlineThickness : number = $state(50);
@@ -26,6 +27,7 @@
             return;
         }
 
+        processedCutout = false;
         isLoading = true;
 
         try {
@@ -54,6 +56,7 @@
             error = 'Request failed: ' + err.message;
         } finally {
             isLoading = false;
+            processedCutout = true;
         }
 
         return;
@@ -82,9 +85,11 @@
                 fileChanged = false;
 
                 debouncedProcess();
+                
             } else {
                 debouncedProcess();
             }
+
         }
     });
 
@@ -107,6 +112,7 @@
                 bind:outlineThickness
                 bind:detailValue
                 bind:outlineColor
+                {processedCutout}
             />
         </div>
     </div>

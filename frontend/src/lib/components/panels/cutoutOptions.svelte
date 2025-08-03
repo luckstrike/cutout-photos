@@ -7,7 +7,8 @@
     let {
         outlineThickness = $bindable(50),
         detailValue = $bindable(25),
-        outlineColor = $bindable("")
+        outlineColor = $bindable(""),
+        processedCutout = false
     } = $props();
 
     function onOutlineColorChange(hexColor: string) {
@@ -35,6 +36,6 @@
         <ColorPicker onHexColorChange={onOutlineColorChange}/>
     </div>
     <div>
-        <Button variant="outline">Create Cutout</Button>
+        <Button variant="outline" disabled={!processedCutout}>Download Cutout</Button>
     </div>
 </div>
