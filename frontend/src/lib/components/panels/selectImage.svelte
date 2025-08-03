@@ -1,33 +1,22 @@
 <script lang="ts">
 	import AspectRatio from '$lib/components/ui/aspect-ratio/aspect-ratio.svelte';
-	import UploadImage from '$lib/components/ui/uploadImage/uploadImage.svelte';
-	import Label from '../ui/label/label.svelte';
-
-    let selectedFile : File | null = $state(null);
-    let imageURL : string | null = $derived(selectedFile ? URL.createObjectURL(selectedFile) : null);
+	import Input from "$lib/components/ui/input/input.svelte";
+	import Label from '$lib/components/ui/label/label.svelte';
 
     interface Props {
-        handleFileSelect?: (file: File | null) => void;
+        selectedFile?: File | null;
     }
 
-    let { handleFileSelect = () => {} } : Props = $props();
+    let { selectedFile = $bindable(null) } : Props = $props();
+    let imageUrl = $derived(selectedFile ? URL.createObjectURL(selectedFile) : null);
 
-    function onFileSelect(file: File) {
-        if (!file) {
-            return;
-        }
-
-        selectedFile = file;
-        handleFileSelect(selectedFile);
-    }
+    let files : FileList | undefined = $state(undefined);
 
     // Cleanup Function
     $effect(() => {
-        return () => {
-            if (imageURL) {
-                URL.revokeObjectURL(imageURL);
-            }
-        };
+        if (files && files.length > 0) {
+            selectedFile = files[0];
+        }
     });
 </script>
 
@@ -37,12 +26,23 @@
 		<AspectRatio ratio={1} class="bg-muted rounded-lg border-2" id="image-preview">
             {#if selectedFile}
                 <img
-                    src={imageURL}
+                    src={imageUrl}
                     alt="..."
                     class="h-full w-full rounded-lg object-cover text-center"
                 />
             {/if}
 		</AspectRatio>
 	</div>
-	<UploadImage {onFileSelect} />
+    <div class="flex flex-col w-full gap-1">
+        <Label for="picture">Select an Image to Upload</Label>
+        <div class="flex flex-1 gap-1">
+            <Input 
+                accept="image/*"
+                bind:files
+                class="flex"
+                id="picture"
+                type="file" 
+            />
+        </div>
+    </div>
 </div>

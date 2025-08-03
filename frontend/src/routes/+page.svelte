@@ -10,7 +10,7 @@
 
     let debounceTiming: number = 300; // in ms
 
-    let fileObj: File | null = $state(null);
+    let selectedFile: File | null = $state(null);
     
     let isLoading : boolean = $state(false);
     let imageUrl : string | null = $state(null);
@@ -26,19 +26,9 @@
             imageUrl = null;
         }
     }
-    
-    function handleFileSelect(file: File | null) : void {
-        if (!file) {
-            return;
-        }
-
-        if (file.type.startsWith('image/')) {
-            fileObj = file;
-        }
-    }
 
     async function uploadData() {
-        if (!fileObj) {
+        if (!selectedFile) {
             return;
         }
 
@@ -49,7 +39,7 @@
             formData.append('detail', detailValue.toString());
             formData.append('outline_color', outlineColor);
 
-            formData.append('file', fileObj);
+            formData.append('file', selectedFile);
 
             const response = await fetch(`${API_BASE}/api/upload`, {
                 method: 'POST',
@@ -88,13 +78,13 @@
     }
 
     const debouncedUploadData = debounce(() => {
-        if (fileObj) {
+        if (selectedFile) {
             uploadData();
         }
     }, debounceTiming);
 
     $effect(() => {
-        if (fileObj && outlineThickness !== undefined && detailValue !== undefined && outlineColor) {
+        if (selectedFile && outlineThickness !== undefined && detailValue !== undefined && outlineColor) {
             debouncedUploadData();
         }
     });
@@ -109,7 +99,7 @@
     <div class="flex flex-col items-center flex-1 gap-6">
         <h1 class="text-3xl font-semibold">Create a Cutout</h1>
         <div class="flex flex-col md:flex-row flex-1 max-w-4xl gap-8 p-2 items-center">
-            <SelectImage {handleFileSelect}/>
+            <SelectImage bind:selectedFile/>
             <CutoutOptions
                 bind:outlineThickness
                 bind:detailValue
