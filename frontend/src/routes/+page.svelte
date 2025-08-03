@@ -6,13 +6,13 @@
     import debounce from 'lodash.debounce';
 	import { onDestroy } from "svelte";
 
-    const API_BASE = "http://127.0.0.1:8000"; // FastAPI server
+    const API_BASE : string = "http://127.0.0.1:8000"; // FastAPI server
 
-    let debounceTiming: number = 300; // in ms
+    let debounceTiming : number = 300; // in ms
 
-    let selectedFile: File | null = $state(null);
-    let lastProcessedFile: File | null = null;
+    let selectedFile : File | null = $state(null);
     let displayImageUrl : string | null = $state(null);
+    let fileChanged : boolean = $state(false);
     
     let isLoading : boolean = $state(false);
     let error : string | null = $state(null);
@@ -66,14 +66,20 @@
     }, debounceTiming);
 
     $effect(() => {
+        if (selectedFile) {
+            fileChanged = true;
+        }
+    })
+
+    $effect(() => {
         if (selectedFile && outlineThickness && detailValue && outlineColor) {
-            if (selectedFile !== lastProcessedFile) {
+            if (fileChanged) {
                 if (displayImageUrl) {
                     URL.revokeObjectURL(displayImageUrl);
                 }
                 displayImageUrl = URL.createObjectURL(selectedFile);
                 isLoading = false;
-                lastProcessedFile = selectedFile;
+                fileChanged = false;
 
                 debouncedProcess();
             } else {
