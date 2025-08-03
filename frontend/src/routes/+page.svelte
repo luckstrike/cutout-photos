@@ -11,26 +11,21 @@
     let debounceTiming: number = 300; // in ms
 
     let selectedFile: File | null = $state(null);
+    let displayImageUrl : string | null = $state(null);
     
     let isLoading : boolean = $state(false);
-    let imageUrl : string | null = $state(null);
     let error : string | null = $state(null);
 
     let outlineThickness : number = $state(50);
     let detailValue : number = $state(25);
     let outlineColor: string = $state("#0000FF");
 
-    function cleanUpImageUrl(): void {
-        if (imageUrl) {
-            URL.revokeObjectURL(imageUrl);
-            imageUrl = null;
-        }
-    }
-
     async function uploadData() {
         if (!selectedFile) {
             return;
         }
+
+        isLoading = true;
 
         try {
             const formData = new FormData();
@@ -38,7 +33,6 @@
             formData.append('outline_thickness', outlineThickness.toString());
             formData.append('detail', detailValue.toString());
             formData.append('outline_color', outlineColor);
-
             formData.append('file', selectedFile);
 
             const response = await fetch(`${API_BASE}/api/upload`, {
@@ -49,25 +43,12 @@
             if (response.ok) {
                 const blob = await response.blob();
 
-                cleanUpImageUrl();
-
-                imageUrl = URL.createObjectURL(blob);
-                
-                // Get metadata from headers if you added them
-                const fileSize = response.headers.get('X-File-Size');
-
-                return imageUrl;
-            } else {
-                // Error responses might still be JSON
-                try {
-                    const errorData = await response.json();
-                    error = errorData.detail || 'Upload failed';
-                } catch {
-                    // If error response isn't JSON either
-                    error = `HTTP ${response.status}: ${response.statusText}`;
+                if (displayImageUrl) {
+                    URL.revokeObjectURL(displayImageUrl);
                 }
-            }
 
+                displayImageUrl = URL.createObjectURL(blob);
+            }
         } catch (err : any) {
             error = 'Request failed: ' + err.message;
         } finally {
@@ -84,13 +65,17 @@
     }, debounceTiming);
 
     $effect(() => {
-        if (selectedFile && outlineThickness !== undefined && detailValue !== undefined && outlineColor) {
+        if (selectedFile && outlineThickness && detailValue && outlineColor) {
             debouncedUploadData();
         }
     });
 
     onDestroy(() => {
         debouncedUploadData.cancel();
+
+        if (displayImageUrl) {
+            URL.revokeObjectURL(displayImageUrl);
+        }
     });
 </script>
 
@@ -99,7 +84,7 @@
     <div class="flex flex-col items-center flex-1 gap-6">
         <h1 class="text-3xl font-semibold">Create a Cutout</h1>
         <div class="flex flex-col md:flex-row flex-1 max-w-4xl gap-8 p-2 items-center">
-            <SelectImage bind:selectedFile/>
+            <SelectImage bind:selectedFile={selectedFile} {displayImageUrl} {isLoading}/>
             <CutoutOptions
                 bind:outlineThickness
                 bind:detailValue

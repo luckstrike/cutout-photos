@@ -5,14 +5,18 @@
 
     interface Props {
         selectedFile?: File | null;
+        displayImageUrl?: string | null;
+        isLoading?: boolean;
     }
 
-    let { selectedFile = $bindable(null) } : Props = $props();
-    let imageUrl = $derived(selectedFile ? URL.createObjectURL(selectedFile) : null);
+    let { 
+        selectedFile = $bindable(null),
+        displayImageUrl = null,
+        isLoading = false
+     } : Props = $props();
 
     let files : FileList | undefined = $state(undefined);
 
-    // Cleanup Function
     $effect(() => {
         if (files && files.length > 0) {
             selectedFile = files[0];
@@ -24,12 +28,17 @@
 	<div class="flex flex-col gap-1">
 		<Label for="image-preview">Image Preview</Label>
 		<AspectRatio ratio={1} class="bg-muted rounded-lg border-2" id="image-preview">
-            {#if selectedFile}
+            {#if displayImageUrl}
                 <img
-                    src={imageUrl}
+                    src={displayImageUrl}
                     alt="..."
                     class="h-full w-full rounded-lg object-cover text-center"
                 />
+                {#if isLoading}
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-sm font-medium">Processing...</div>
+                    </div>
+                {/if}
             {/if}
 		</AspectRatio>
 	</div>
