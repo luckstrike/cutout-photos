@@ -24,12 +24,12 @@
     </div>
     <div class="flex flex-col gap-2">
         <Label for="outline-value">Outline Thickness</Label>
-        <Slider type="single" bind:value={outlineThickness} max={100} step={1} class="max-w" id="outline-value" />
+        <Slider type="single" bind:value={outlineThickness} min={0} max={100} step={1} class="max-w" id="outline-value" />
     </div>
     
     <div class="flex flex-col gap-2">
         <Label for="detail-value">Detail Value</Label>
-        <Slider type="single" bind:value={detailValue} max={50} step={1} class="max-w" id="detail-value" />
+        <Slider type="single" bind:value={detailValue} min={0} max={50} step={1} class="max-w" id="detail-value" />
     </div>
     <div class="flex flex-col gap-2">
         <Label for="outline-color">Outline Color</Label>

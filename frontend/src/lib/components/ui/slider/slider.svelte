@@ -21,12 +21,12 @@ get along, so we shut typescript up by casting `value` to `never`.
 	data-slot="slider"
 	{orientation}
 	class={cn(
-		"relative flex w-full touch-none select-none items-center data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col data-[disabled]:opacity-50",
+		"relative mt-1 mb-4 flex w-full touch-none select-none items-center data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col data-[disabled]:opacity-50",
 		className
 	)}
 	{...restProps}
 >
-	{#snippet children({ thumbs })}
+	{#snippet children({ thumbs, tickItems })}
 		<span
 			data-orientation={orientation}
 			data-slot="slider-track"
@@ -48,5 +48,27 @@ get along, so we shut typescript up by casting `value` to `never`.
 				class="border-primary bg-background ring-ring/50 focus-visible:outline-hidden block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 disabled:pointer-events-none disabled:opacity-50"
 			/>
 		{/each}
+
+		<!-- left end -->
+		<SliderPrimitive.Tick index={0} />
+		<SliderPrimitive.TickLabel 
+			index={0}
+			class="text-muted-foreground text-xs mt-2 mb-2"
+			position="bottom"	
+		>
+			{tickItems[0].value}           <!-- real min value -->
+		</SliderPrimitive.TickLabel>
+
+		<!-- right end -->
+		{@const last = tickItems.length - 1}
+		<SliderPrimitive.Tick index={last} />
+		<SliderPrimitive.TickLabel 
+			index={last}
+			class="text-muted-foreground text-xs mt-2 mb-2"
+			position="bottom"
+		>
+			{tickItems[last].value}        <!-- real max value -->
+		</SliderPrimitive.TickLabel>	
+
 	{/snippet}
 </SliderPrimitive.Root>
