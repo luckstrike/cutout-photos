@@ -4,5 +4,8 @@
 	let { children } = $props();
 </script>
 
+<svelte:head>
+	<title>Cutout Photos</title>
+</svelte:head>
 <ModeWatcher />
 {@render children()}

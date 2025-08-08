@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { panzoom } from '$lib/actions/panzoom';
 	import AspectRatio from '$lib/components/ui/aspect-ratio/aspect-ratio.svelte';
 	import Input from "$lib/components/ui/input/input.svelte";
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -16,6 +17,7 @@
      } : Props = $props();
 
     let files : FileList | undefined = $state(undefined);
+    let ctrl;
 
     $effect(() => {
         if (files && files.length > 0) {
@@ -30,8 +32,10 @@
 		<AspectRatio ratio={1} class="bg-muted rounded-lg border-2" id="image-preview">
             {#if displayImageUrl}
                 <img
+                    use:panzoom={{ onInit: c => (ctrl = c)}}
                     src={displayImageUrl}
                     alt="..."
+                    onload={() => ctrl?.reset()}
                     class="h-full w-full rounded-lg object-cover text-center"
                 />
                 {#if isLoading}
