@@ -3,6 +3,7 @@
 	import AspectRatio from '$lib/components/ui/aspect-ratio/aspect-ratio.svelte';
 	import Input from "$lib/components/ui/input/input.svelte";
 	import Label from '$lib/components/ui/label/label.svelte';
+	import { RefreshCw } from '@lucide/svelte';
 
     interface Props {
         selectedFile?: File | null;
@@ -17,7 +18,7 @@
      } : Props = $props();
 
     let files : FileList | undefined = $state(undefined);
-    let ctrl;
+    let ctrl: any;
 
     $effect(() => {
         if (files && files.length > 0) {
@@ -31,18 +32,36 @@
 		<Label for="image-preview">Image Preview</Label>
 		<AspectRatio ratio={1} class="bg-muted rounded-lg border-2" id="image-preview">
             {#if displayImageUrl}
-                <img
-                    use:panzoom={{ onInit: c => (ctrl = c)}}
-                    src={displayImageUrl}
-                    alt="..."
-                    onload={() => ctrl?.reset()}
-                    class="h-full w-full rounded-lg object-cover text-center"
-                />
-                {#if isLoading}
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="text-sm font-medium">Processing...</div>
-                    </div>
-                {/if}
+                <div class="relative h-full w-full">
+                    <img
+                        use:panzoom={{ onInit: (c: any) => (ctrl = c)}}
+                        src={displayImageUrl}
+                        alt="Selected image preview"
+                        onload={() => (ctrl as any)?.reset?.({} as any)}
+                        draggable="false"
+                        class="h-full w-full rounded-lg object-contain text-center touch-none"
+                        style="image-rendering: auto;"
+                    />
+
+                    <button
+                        type="button"
+                        class="absolute top-2 right-2 z-40 bg-white/80 hover:bg-white rounded-md w-8 h-8 p-1 shadow transition-opacity flex items-center justify-center"
+                        aria-label="Reset view"
+                        onclick={(e: MouseEvent) => { e.stopPropagation(); return (ctrl ? (ctrl as any).reset?.({ animate: true } as any) : null); }}
+                        onpointerdown={(e: PointerEvent) => e.stopPropagation()}
+                        style="pointer-events: auto;"
+                        tabindex="0"
+                    >
+                        <RefreshCw class="h-4 w-4 text-gray-700" aria-hidden="true" />
+                        <span class="sr-only">Reset view</span>
+                    </button>
+
+                    {#if isLoading}
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-sm font-medium">Processing...</div>
+                        </div>
+                    {/if}
+                </div>
             {/if}
 		</AspectRatio>
 	</div>
