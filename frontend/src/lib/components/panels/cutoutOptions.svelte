@@ -4,15 +4,37 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import ColorPicker from "../ui/colorPicker/colorPicker.svelte";
     
+    interface Props {
+        outlineThickness? : number;
+        detailValue? : number;
+        outlineColor? : string;
+        processedCutout? : boolean;
+        imageUrl? : string | null;
+        suggestedFilename? : string;
+    }
+
     let {
         outlineThickness = $bindable(50),
         detailValue = $bindable(25),
         outlineColor = $bindable(""),
-        processedCutout = false
-    } = $props();
+        processedCutout = false,
+        imageUrl = null,
+        suggestedFilename = "cutout.png"
+    } : Props = $props();
 
     function onOutlineColorChange(hexColor: string) {
         outlineColor = hexColor;
+    }
+
+    function handleOnClick() {
+        if (!imageUrl) return;
+
+        const a = document.createElement('a');
+        a.href = imageUrl;
+        a.download = suggestedFilename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
     }
 
 </script>
@@ -36,6 +58,12 @@
         <ColorPicker onHexColorChange={onOutlineColorChange}/>
     </div>
     <div>
-        <Button variant="outline" disabled={!processedCutout}>Download Cutout</Button>
+        <Button 
+            variant="outline" 
+            onclick={handleOnClick} 
+            disabled={!processedCutout || !imageUrl}
+        >
+            Download Cutout
+        </Button>
     </div>
 </div>

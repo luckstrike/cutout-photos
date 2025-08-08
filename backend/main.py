@@ -1,5 +1,7 @@
 import io
 import uuid
+import urllib.parse
+from pathlib import Path
 from PIL import Image
 from fastapi import FastAPI, File, Response, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,63 +25,67 @@ app.add_middleware(
 async def root():
     return {"message": "Paper Cutout API", "docs": "/docs"}
 
-@app.post("/api/upload")
-async def upload_image(file: UploadFile = File(...), 
-                        outline_thickness: int = Form(...), 
-                        detail: int = Form(...),
-                        outline_color: str = Form(...)):
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    if file.size > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail="File too large. Maximum size is 10MB"
-        )
-    
-    content = await file.read()
 
-    image_stream = io.BytesIO(content)
-    input_image = Image.open(image_stream)
+@app.post("/api/upload")
+async def upload_image(
+    file: UploadFile = File(...),
+    outline_thickness: int = Form(...),
+    detail: int = Form(...),
+    outline_color: str = Form(...)
+    ):
+    # Read with a hard cap so we don’t blow memory
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB")
+
+    # Basic content-type guard
+    if not (file.content_type and file.content_type.startswith("image/")):
+        raise HTTPException(status_code=400, detail="File must be an image")
 
     try:
-        # Create processor with selected settings
+        # Decode image
+        image_stream = io.BytesIO(content)
+        input_image = Image.open(image_stream)
+
+        # Process
         processor = ImageProcessor(
             background_color=hex_to_rgb(outline_color),
             detail=detail,
             outline_thickness=outline_thickness
         )
-
         processed_image = processor.process_PIL_image(input_image)
-
-        if not processed_image:
+        if processed_image is None:
             raise RuntimeError("Failed to process image")
-        
-        # Output Stream
+
+        # Encode PNG to bytes
         output_stream = io.BytesIO()
         processed_image.save(output_stream, format="PNG")
-        output_stream.seek(0)
         image_bytes = output_stream.getvalue()
-        
+
+        # Build a nice filename (fallback-safe, UTF-8 encoded)
+        base = Path(file.filename or f"upload-{uuid.uuid4().hex}").stem
+        out_name = f"{base}-cutout.png"
+        out_name_quoted = urllib.parse.quote(out_name)
+
         return Response(
             content=image_bytes,
             media_type="image/png",
             headers={
-                "Content-Disposition": "inline; filename=processed_image.png",
+                # Use attachment to strongly hint “download” semantics
+                "Content-Disposition": f'attachment; filename="{out_name}"; filename*=UTF-8\'\'{out_name_quoted}',
+                "Content-Length": str(len(image_bytes)),
                 "X-Original-Size": f"{processed_image.size[0]}x{processed_image.size[1]}",
-                "X-File-Size": str(len(image_bytes))
-            }
+                "X-File-Size": str(len(image_bytes)),
+                # Optional, helps with dev caching behavior
+                "Cache-Control": "no-store",
+            },
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        # Log the error for debugging
-        print(f"Error processing image: {str(e)}")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to process image. Please try again."
-        )
-
+        print(f"Error processing image: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process image. Please try again.")
 
 
 @app.post("/api/process")
