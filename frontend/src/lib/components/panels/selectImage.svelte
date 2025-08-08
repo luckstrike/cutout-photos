@@ -4,6 +4,7 @@
 	import Input from "$lib/components/ui/input/input.svelte";
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { RefreshCw } from '@lucide/svelte';
+import { Button } from '$lib/components/ui/button';
 
     interface Props {
         selectedFile?: File | null;
@@ -43,18 +44,19 @@
                         style="image-rendering: auto;"
                     />
 
-                    <button
-                        type="button"
-                        class="absolute top-2 right-2 z-40 bg-white/80 hover:bg-white rounded-md w-8 h-8 p-1 shadow transition-opacity flex items-center justify-center"
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        class="absolute top-2 right-2 z-40 bg-opacity-70 backdrop-blur-sm"
                         aria-label="Reset view"
                         onclick={(e: MouseEvent) => { e.stopPropagation(); return (ctrl ? (ctrl as any).reset?.({ animate: true } as any) : null); }}
                         onpointerdown={(e: PointerEvent) => e.stopPropagation()}
                         style="pointer-events: auto;"
-                        tabindex="0"
+                        tabindex={0}
                     >
-                        <RefreshCw class="h-4 w-4 text-gray-700" aria-hidden="true" />
+                        <RefreshCw class="h-4 w-4" aria-hidden="true" />
                         <span class="sr-only">Reset view</span>
-                    </button>
+                    </Button>
 
                     {#if isLoading}
                         <div class="absolute inset-0 flex items-center justify-center">
